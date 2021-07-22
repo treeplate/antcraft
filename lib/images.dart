@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+// test autolabeler again
 class OreRenderer extends StatelessWidget {
   const OreRenderer({Key? key, required this.color, required this.smelted})
       : super(key: key);
