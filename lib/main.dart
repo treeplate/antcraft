@@ -9,12 +9,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import 'images.dart';
-
-// TODO:
-// - add crafting
-// - redo tutorial
-// - add automation
-// - maybe more
 Map<String, MaterialColor> oreColors = {
   "gold": Colors.yellow,
   "iron": Colors.blue,
