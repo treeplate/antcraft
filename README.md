@@ -16,3 +16,5 @@ A 2D automation-based work-in-progress open-world game.
 The 'ant' part of the name is for historical reasons:
 At first my game was basically a snake game with no apples.
 When I pointed it out to someone they said it was not a snake game but an ***ant*** game.
+## Naming
+I may change the name.
