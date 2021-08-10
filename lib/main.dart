@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import 'images.dart';
+
 Map<String, MaterialColor> oreColors = {
   "gold": Colors.yellow,
   "iron": Colors.blue,
@@ -47,6 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
     //1: {1: "none"},
   };
   Map<int, Map<int, Offset>> roomOrePositions = {};
+  Map<int, Map<int, Offset>> logPositions = {};
 
   final List<String> ores = ["ore.raw.iron", "ore.raw.gold"];
   String get roomOre {
@@ -60,6 +62,16 @@ class _MyHomePageState extends State<MyHomePage> {
           Offset(Random().nextDouble() * 129, Random().nextDouble() * 75);
     }
     return roomOres[roomX]![roomY]!;
+  }
+  Offset get logPos {
+    if (logPositions[roomX] == null) {
+      logPositions[roomX] = {};
+    }
+    if (logPositions[roomX]![roomY] == null) {
+      logPositions[roomX]![roomY] =
+          Offset(Random().nextDouble() * 129, Random().nextDouble() * 75);
+    }
+    return logPositions[roomX]![roomY]!;
   }
 
   String get tutorial {

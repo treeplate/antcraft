@@ -6,12 +6,7 @@ A 2D automation-based work-in-progress open-world game.
 - Floor made out of stone you can mine
 - Infinite-sized inventory
 ## TODO: (in order)
-- Add wood
-- Add crafting (1x1 grid)
-- Add placing
-- Add crafting for crafting table
-- Add pickaxe-tiering like Minecraft
-- ...
+- https://github.com/treeplate/antcraft/projects/1?add_cards_query=is%3Aopen
 ## Naming
 The 'ant' part of the name is for historical reasons:
 At first my game was basically a snake game with no apples.
