@@ -11,8 +11,9 @@ class OreRenderer extends StatelessWidget {
       width: 30,
       height: 30,
       decoration: BoxDecoration(
-          color: color[smelted ? 600 : 800],
-          borderRadius: BorderRadius.circular(smelted ? 0 : 10)),
+        color: color[smelted ? 600 : 800],
+        borderRadius: BorderRadius.circular(smelted ? 0 : 10),
+      ),
     );
   }
 }
@@ -22,20 +23,6 @@ class WoodRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 30,
-          height: 5,
-          color: Colors.brown[200],
-        ),
-        Container(
-          width: 30,
-          height: 25,
-          color: Colors.brown,
-        ),
-      ],
-    );
+    return Image.asset("wood.png", width: 40, height: 40,);
   }
 }

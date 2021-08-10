@@ -50,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Map<int, Map<int, Offset>> roomOrePositions = {};
   Map<int, Map<int, Offset>> logPositions = {};
 
-  final List<String> ores = ["ore.raw.iron", "ore.raw.gold"];
+  final List<String> ores = ["ore.raw.iron", "ore.raw.gold", "wood"];
   String get roomOre {
     if (roomOres[roomX] == null) {
       roomOres[roomX] = {};
@@ -365,6 +365,9 @@ class ItemRenderer extends StatelessWidget {
           smelted:
               !(item.substring(item.indexOf(".") + 1, item.lastIndexOf(".")) ==
                   "raw"));
+    }
+    if(item == "wood") {
+      return const WoodRenderer();
     }
     return Text(
       "unknown key $item",
