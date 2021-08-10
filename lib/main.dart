@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import 'images.dart';
+
 Map<String, MaterialColor> oreColors = {
   "gold": Colors.yellow,
   "iron": Colors.blue,
@@ -47,7 +48,8 @@ class _MyHomePageState extends State<MyHomePage> {
     //1: {1: "none"},
   };
   Map<int, Map<int, Offset>> roomOrePositions = {};
-
+  double screenWidth = 144;
+  double screenHeight = 90;
   final List<String> ores = ["ore.raw.iron", "ore.raw.gold"];
   String get roomOre {
     if (roomOres[roomX] == null) {
@@ -56,8 +58,9 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     if (roomOres[roomX]![roomY] == null) {
       roomOres[roomX]![roomY] = (ores..shuffle()).first;
-      roomOrePositions[roomX]![roomY] =
-          Offset(Random().nextDouble() * 129, Random().nextDouble() * 75);
+      roomOrePositions[roomX]![roomY] = Offset(
+          Random().nextDouble() * screenWidth - 15,
+          Random().nextDouble() * screenHeight - 15);
     }
     return roomOres[roomX]![roomY]!;
   }
@@ -156,10 +159,10 @@ class _MyHomePageState extends State<MyHomePage> {
       Timer(Duration(seconds: cooldown), () => recentMined = false);
     }
     if (event.character == "x" &&
-        playerX > 72 - 7.5 &&
-        playerY > 45 - 7.5 &&
-        playerX < (15 + 72) - 7.5 &&
-        playerY < (45 + 15) - 7.5 &&
+        playerX > screenWidth / 2 - 7.5 &&
+        playerY > screenHeight / 2 - 7.5 &&
+        playerX < (15 + screenWidth / 2) - 7.5 &&
+        playerY < (screenHeight / 2 + 15) - 7.5 &&
         roomX == 1 &&
         roomY == 1) {
       shopActive = true;
@@ -183,17 +186,17 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       if (playerX <= 0) {
         roomX--;
-        playerX = 138;
+        playerX = (screenWidth - 6).round();
       }
-      if (playerX >= 139) {
+      if (playerX >= (screenWidth - 5).round()) {
         roomX++;
         playerX = 1;
       }
       if (playerY <= 0) {
         roomY--;
-        playerY = 84;
+        playerY = (screenHeight - 6).round();
       }
-      if (playerY >= 85) {
+      if (playerY >= (screenHeight - 5).round()) {
         roomY++;
         playerY = 1;
       }
@@ -216,127 +219,133 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     //debugDumpApp();
-    return Scaffold(
-      body: Focus(
-        onKey: _handleKeyPress,
-        autofocus: true,
-        child: ScreenFiller(
-          child: Container(
-            color: Colors.grey,
-            child: Stack(
-              children: [
-                const Center(),
-                if (roomOre != "none")
-                  Positioned(
-                    left: roomOrePositions[roomX]![roomY]!.dx * 10,
-                    top: roomOrePositions[roomX]![roomY]!.dy * 10,
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      color: Colors.green,
-                    ),
-                  ),
-                if (roomX == 1 && roomY == 1)
-                  Positioned(
-                    left: 720 - 75,
-                    top: 450 - 75,
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      color: Colors.red,
-                    ),
-                  ),
-                if (roomOre != "none")
-                  Positioned(
-                    left: roomOrePositions[roomX]![roomY]!.dx * 10,
-                    top: roomOrePositions[roomX]![roomY]!.dy * 10,
-                    child: ItemRenderer(roomOre),
-                  ),
-                Positioned(
-                  left: playerX / .1,
-                  top: playerY / .1,
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.all(Radius.circular(75)),
-                        color: Colors.green),
-                  ),
-                ),
-                if (shopActive)
-                  Center(
-                    child: Container(
-                      color: Colors.lime,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ShopItem(
-                            5,
-                            () {
-                              cooldown = 1;
-                              shopActive = false;
-                            },
-                            "Better pick",
-                            (inv["ore.raw.gold"] ?? 0),
-                            (g) => inv["ore.raw.gold"] = g,
-                            goldKey: "ore.raw.gold",
-                          ),
-                          ShopItem(
-                            20,
-                            () {
-                              won = true;
-                            },
-                            "Win game",
-                            (inv["ore.raw.iron"] ?? 0),
-                            (g) => inv["ore.raw.iron"] = g,
-                            goldKey: "ore.raw.iron",
-                          ),
-                          TextButton(
-                              onPressed: () => shopActive = false,
-                              child: const Text("Leave shop")),
-                        ],
+    return LayoutBuilder(builder: (context, BoxConstraints constraints) {
+      screenWidth = constraints.maxWidth / 10;
+      screenHeight = constraints.maxHeight / 10;
+      print(screenWidth);
+      print(screenHeight);
+      return Scaffold(
+        body: Focus(
+          onKey: _handleKeyPress,
+          autofocus: true,
+          child: ScreenFiller(
+            child: Container(
+              color: Colors.grey,
+              child: Stack(
+                children: [
+                  const Center(),
+                  if (roomOre != "none")
+                    Positioned(
+                      left: roomOrePositions[roomX]![roomY]!.dx * 10,
+                      top: roomOrePositions[roomX]![roomY]!.dy * 10,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        color: Colors.green,
                       ),
                     ),
-                  ),
-                if (invActive)
-                  Center(
+                  if (roomX == 1 && roomY == 1)
+                    Positioned(
+                      left: constraints.maxWidth / 2 - 75,
+                      top: constraints.maxHeight / 2 - 75,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        color: Colors.red,
+                      ),
+                    ),
+                  if (roomOre != "none")
+                    Positioned(
+                      left: roomOrePositions[roomX]![roomY]!.dx * 10,
+                      top: roomOrePositions[roomX]![roomY]!.dy * 10,
+                      child: ItemRenderer(roomOre),
+                    ),
+                  Positioned(
+                    left: playerX / .1,
+                    top: playerY / .1,
                     child: Container(
-                      width: 300,
-                      height: 300,
-                      color: Colors.black,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.vertical,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: inv.keys
-                              .map(
-                                (a) => Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    ItemRenderer(
-                                      a,
-                                    ),
-                                    Text(
-                                      "${inv[a]}",
-                                      style:
-                                          const TextStyle(color: Colors.white),
-                                    ),
-                                  ],
-                                ),
-                              )
-                              .toList(),
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(75)),
+                          color: Colors.green),
+                    ),
+                  ),
+                  if (shopActive)
+                    Center(
+                      child: Container(
+                        color: Colors.lime,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ShopItem(
+                              5,
+                              () {
+                                cooldown = 1;
+                                shopActive = false;
+                              },
+                              "Better pick",
+                              (inv["ore.raw.gold"] ?? 0),
+                              (g) => inv["ore.raw.gold"] = g,
+                              goldKey: "ore.raw.gold",
+                            ),
+                            ShopItem(
+                              20,
+                              () {
+                                won = true;
+                              },
+                              "Win game",
+                              (inv["ore.raw.iron"] ?? 0),
+                              (g) => inv["ore.raw.iron"] = g,
+                              goldKey: "ore.raw.iron",
+                            ),
+                            TextButton(
+                                onPressed: () => shopActive = false,
+                                child: const Text("Leave shop")),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                Text(tutorial),
-              ],
+                  if (invActive)
+                    Center(
+                      child: Container(
+                        width: 300,
+                        height: 300,
+                        color: Colors.black,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: inv.keys
+                                .map(
+                                  (a) => Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      ItemRenderer(
+                                        a,
+                                      ),
+                                      Text(
+                                        "${inv[a]}",
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  Text(tutorial),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 
