@@ -50,6 +50,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Map<int, Map<int, Offset>> roomOrePositions = {};
   double screenWidth = 144;
   double screenHeight = 90;
+  Map<int, Map<int, Offset>> logPositions = {};
+
   final List<String> ores = ["ore.raw.iron", "ore.raw.gold"];
   String get roomOre {
     if (roomOres[roomX] == null) {
@@ -63,6 +65,17 @@ class _MyHomePageState extends State<MyHomePage> {
           Random().nextDouble() * screenHeight - 15);
     }
     return roomOres[roomX]![roomY]!;
+  }
+
+  Offset get logPos {
+    if (logPositions[roomX] == null) {
+      logPositions[roomX] = {};
+    }
+    if (logPositions[roomX]![roomY] == null) {
+      logPositions[roomX]![roomY] =
+          Offset(Random().nextDouble() * 129, Random().nextDouble() * 75);
+    }
+    return logPositions[roomX]![roomY]!;
   }
 
   String get tutorial {

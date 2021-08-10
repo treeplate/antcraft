@@ -16,3 +16,26 @@ class OreRenderer extends StatelessWidget {
     );
   }
 }
+
+class WoodRenderer extends StatelessWidget {
+  const WoodRenderer({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 30,
+          height: 5,
+          color: Colors.brown[200],
+        ),
+        Container(
+          width: 30,
+          height: 25,
+          color: Colors.brown,
+        ),
+      ],
+    );
+  }
+}
