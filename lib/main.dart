@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import 'images.dart';
 
+const bool debugMode = false;
 Map<String, MaterialColor> oreColors = {
   "gold": Colors.yellow,
   "iron": Colors.blue,
@@ -61,8 +62,9 @@ class _MyHomePageState extends State<MyHomePage> {
     if (roomOres[roomX]![roomY] == null) {
       roomOres[roomX]![roomY] = (ores..shuffle()).first;
       roomOrePositions[roomX]![roomY] = Offset(
-          Random().nextDouble() * screenWidth - 15,
-          Random().nextDouble() * screenHeight - 15);
+        Random().nextDouble() * (screenWidth - 15),
+        Random().nextDouble() * (screenHeight - 15),
+      );
     }
     return roomOres[roomX]![roomY]!;
   }
@@ -72,8 +74,10 @@ class _MyHomePageState extends State<MyHomePage> {
       logPositions[roomX] = {};
     }
     if (logPositions[roomX]![roomY] == null) {
-      logPositions[roomX]![roomY] =
-          Offset(Random().nextDouble() * 129, Random().nextDouble() * 75);
+      logPositions[roomX]![roomY] = Offset(
+        Random().nextDouble() * (screenWidth - 15),
+        Random().nextDouble() * (screenHeight - 15),
+      );
     }
     return logPositions[roomX]![roomY]!;
   }
@@ -169,6 +173,9 @@ class _MyHomePageState extends State<MyHomePage> {
       } else {
         inv["ore.just.stone"] = (inv["ore.just.stone"] ?? 0) + 1;
       }
+      mineFeedback = "+1";
+      Timer(const Duration(milliseconds: 500),
+          () => setState(() => mineFeedback = ""));
       Timer(Duration(seconds: cooldown), () => recentMined = false);
     }
     if (event.character == "x" &&
@@ -187,6 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return KeyEventResult.handled;
   }
 
+  String mineFeedback = "";
   int cooldown = 3;
   int playerX = 0;
   int playerY = 0;
@@ -215,6 +223,15 @@ class _MyHomePageState extends State<MyHomePage> {
       }
       playerX += xVel;
       playerY += yVel;
+      if (logPos.dx > playerX &&
+          logPos.dx < playerX + 5 &&
+          logPos.dy > playerY &&
+          logPos.dy < playerY + 5) {
+        logPositions[roomX]![roomY] = const Offset(-30, -30);
+        if (inv['wood'] == null) inv['wood'] = 0;
+        inv['wood']!+=1;
+        !recentMined!;
+      }
     });
   });
   _MyHomePageState() {
@@ -246,8 +263,8 @@ class _MyHomePageState extends State<MyHomePage> {
               color: Colors.grey,
               child: Stack(
                 children: [
-                  const Center(),
-                  if (roomOre != "none")
+                  Center(child: Text(mineFeedback)),
+                  if (roomOre != "none" && debugMode)
                     Positioned(
                       left: roomOrePositions[roomX]![roomY]!.dx * 10,
                       top: roomOrePositions[roomX]![roomY]!.dy * 10,
@@ -271,8 +288,21 @@ class _MyHomePageState extends State<MyHomePage> {
                     Positioned(
                       left: roomOrePositions[roomX]![roomY]!.dx * 10,
                       top: roomOrePositions[roomX]![roomY]!.dy * 10,
-                      child: ItemRenderer(roomOre),
+                      child: ItemRenderer(
+                        roomOre,
+                        width: 150,
+                        height: 150,
+                      ),
                     ),
+                  Positioned(
+                    left: logPos.dx * 10,
+                    top: logPos.dy * 10,
+                    child: const ItemRenderer(
+                      "wood",
+                      width: 30,
+                      height: 30,
+                    ),
+                  ),
                   Positioned(
                     left: playerX / .1,
                     top: playerY / .1,
@@ -291,17 +321,18 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            ShopItem(
-                              5,
-                              () {
-                                cooldown = 1;
-                                shopActive = false;
-                              },
-                              "Better pick",
-                              (inv["ore.raw.gold"] ?? 0),
-                              (g) => inv["ore.raw.gold"] = g,
-                              goldKey: "ore.raw.gold",
-                            ),
+                            if (cooldown == 3)
+                              ShopItem(
+                                5,
+                                () {
+                                  cooldown = 1;
+                                  shopActive = false;
+                                },
+                                "Better pick",
+                                (inv["ore.raw.gold"] ?? 0),
+                                (g) => inv["ore.raw.gold"] = g,
+                                goldKey: "ore.raw.gold",
+                              ),
                             ShopItem(
                               20,
                               () {
@@ -337,6 +368,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                     children: [
                                       ItemRenderer(
                                         a,
+                                        width: 30,
+                                        height: 30,
                                       ),
                                       Text(
                                         "${inv[a]}",
@@ -365,19 +398,25 @@ class _MyHomePageState extends State<MyHomePage> {
 class ItemRenderer extends StatelessWidget {
   final String item;
 
-  const ItemRenderer(this.item, {Key? key}) : super(key: key);
-
+  const ItemRenderer(this.item,
+      {Key? key, required this.width, required this.height})
+      : super(key: key);
+  final double width;
+  final double height;
   @override
   Widget build(BuildContext context) {
     if (item.contains(".") && item.substring(0, item.indexOf(".")) == "ore") {
       return OreRenderer(
-          color: oreColors[item.substring(item.lastIndexOf(".") + 1)]!,
-          smelted:
-              !(item.substring(item.indexOf(".") + 1, item.lastIndexOf(".")) ==
-                  "raw"));
+        color: oreColors[item.substring(item.lastIndexOf(".") + 1)]!,
+        smelted:
+            !(item.substring(item.indexOf(".") + 1, item.lastIndexOf(".")) ==
+                "raw"),
+        height: height,
+        width: width,
+      );
     }
-    if(item == "wood") {
-      return const WoodRenderer();
+    if (item == "wood") {
+      return WoodRenderer(width: width, height: height);
     }
     return Text(
       "unknown key $item",
@@ -403,7 +442,14 @@ class ShopItem extends StatelessWidget {
       children: [
         Text(text),
         Row(
-          children: [ItemRenderer(goldKey), Text(cost.toString())],
+          children: [
+            ItemRenderer(
+              goldKey,
+              width: 30,
+              height: 30,
+            ),
+            Text(cost.toString())
+          ],
         ),
         TextButton(
           onPressed: () {
