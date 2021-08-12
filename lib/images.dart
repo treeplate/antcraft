@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 class OreRenderer extends StatelessWidget {
-  const OreRenderer(
-      {Key? key,
-      required this.color,
-      required this.smelted,
-      required this.width,
-      required this.height})
-      : super(key: key);
+  const OreRenderer({
+    Key? key,
+    required this.color,
+    required this.smelted,
+    required this.width,
+    required this.height,
+  }) : super(key: key);
   final MaterialColor color;
   final bool smelted;
   final double width;
@@ -26,18 +26,31 @@ class OreRenderer extends StatelessWidget {
 }
 
 class WoodRenderer extends StatelessWidget {
-  const WoodRenderer({Key? key, required this.width, required this.height})
-      : super(key: key);
+  const WoodRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.placed = false,
+  }) : super(key: key);
   final double width;
   final double height;
+  final bool placed;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      "wood.png",
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-    );
+    return placed
+        ? Image.asset(
+            "placed-wood.png",
+            width: width,
+            height: height,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.none,
+          )
+        : Image.asset(
+            "wood.png",
+            width: width,
+            height: height,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.none,
+          );
   }
 }

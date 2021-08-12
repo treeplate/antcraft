@@ -53,7 +53,9 @@ class _MyHomePageState extends State<MyHomePage> {
   double screenHeight = 90;
   Map<int, Map<int, Offset>> logPositions = {};
 
-  final List<String> ores = ["ore.raw.iron", "ore.raw.gold", "wood"];
+  final List<String> ores = ["ore.raw.iron", "ore.raw.gold"];
+
+  bool craftingOpen = false;
   String get roomOre {
     if (roomOres[roomX] == null) {
       roomOres[roomX] = {};
@@ -67,6 +69,16 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     }
     return roomOres[roomX]![roomY]!;
+  }
+
+  List<Offset> get roomTables {
+    if (totalTables[roomX] == null) {
+      totalTables[roomX] = {};
+    }
+    if (totalTables[roomX]![roomY] == null) {
+      totalTables[roomX]![roomY] = [];
+    }
+    return totalTables[roomX]![roomY]!;
   }
 
   Offset get logPos {
@@ -178,6 +190,10 @@ class _MyHomePageState extends State<MyHomePage> {
           () => setState(() => mineFeedback = ""));
       Timer(Duration(seconds: cooldown), () => recentMined = false);
     }
+    if (event.character == "q" && (inv['wood.raw'] ?? 0) > 0) {
+      inv['wood.raw'] = inv['wood.raw']! - 1;
+      roomTables.add(Offset(playerX / 1, playerY / 1));
+    }
     if (event.character == "x" &&
         playerX > screenWidth / 2 - 7.5 &&
         playerY > screenHeight / 2 - 7.5 &&
@@ -186,6 +202,20 @@ class _MyHomePageState extends State<MyHomePage> {
         roomX == 1 &&
         roomY == 1) {
       shopActive = true;
+    }
+    if (event.character == "f") {
+      for (Offset logPos in roomTables) {
+        if ((logPos.dx > playerX &&
+                logPos.dx < playerX + 5 &&
+                logPos.dy > playerY &&
+                logPos.dy < playerY + 5) ||
+            (logPos.dx + 3 > playerX &&
+                logPos.dx + 3 < playerX + 5 &&
+                logPos.dy + 3 > playerY &&
+                logPos.dy + 3 < playerY + 5)) {
+          craftingOpen = true;
+        }
+      }
     }
     if (event.character == "e") {
       invOpened = true;
@@ -202,6 +232,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int yVel = 0;
   int roomX = 0;
   int roomY = 0;
+  Map<int, Map<int, List<Offset>>> totalTables = {};
   late Timer movement =
       Timer.periodic(const Duration(milliseconds: 1000 ~/ 60), (_) {
     setState(() {
@@ -223,14 +254,17 @@ class _MyHomePageState extends State<MyHomePage> {
       }
       playerX += xVel;
       playerY += yVel;
-      if (logPos.dx > playerX &&
-          logPos.dx < playerX + 5 &&
-          logPos.dy > playerY &&
-          logPos.dy < playerY + 5) {
+      if ((logPos.dx > playerX &&
+              logPos.dx < playerX + 5 &&
+              logPos.dy > playerY &&
+              logPos.dy < playerY + 5) ||
+          (logPos.dx + 3 > playerX &&
+              logPos.dx + 3 < playerX + 5 &&
+              logPos.dy + 3 > playerY &&
+              logPos.dy + 3 < playerY + 5)) {
         logPositions[roomX]![roomY] = const Offset(-30, -30);
-        if (inv['wood'] == null) inv['wood'] = 0;
-        inv['wood']!+=1;
-        !recentMined!;
+        if (inv['wood.raw'] == null) inv['wood.raw'] = 0;
+        inv['wood.raw'] = inv['wood.raw']! + 1;
       }
     });
   });
@@ -252,8 +286,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return LayoutBuilder(builder: (context, BoxConstraints constraints) {
       screenWidth = constraints.maxWidth / 10;
       screenHeight = constraints.maxHeight / 10;
-      print(screenWidth);
-      print(screenHeight);
       return Scaffold(
         body: Focus(
           onKey: _handleKeyPress,
@@ -263,7 +295,6 @@ class _MyHomePageState extends State<MyHomePage> {
               color: Colors.grey,
               child: Stack(
                 children: [
-                  Center(child: Text(mineFeedback)),
                   if (roomOre != "none" && debugMode)
                     Positioned(
                       left: roomOrePositions[roomX]![roomY]!.dx * 10,
@@ -294,24 +325,53 @@ class _MyHomePageState extends State<MyHomePage> {
                         height: 150,
                       ),
                     ),
+                  if (debugMode)
+                    Positioned(
+                      left: logPos.dx * 10,
+                      top: logPos.dy * 10,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        color: Colors.green,
+                      ),
+                    ),
                   Positioned(
                     left: logPos.dx * 10,
                     top: logPos.dy * 10,
                     child: const ItemRenderer(
-                      "wood",
+                      "wood.raw",
                       width: 30,
                       height: 30,
                     ),
                   ),
+                  for (Offset table in roomTables) ...[
+                    if (debugMode)
+                      Positioned(
+                        left: table.dx * 10,
+                        top: table.dy * 10,
+                        child: Container(
+                          color: Colors.green,
+                          width: 30,
+                          height: 30,
+                        ),
+                      ),
+                    Positioned(
+                      left: table.dx * 10,
+                      top: table.dy * 10,
+                      child: const ItemRenderer(
+                        "wood.placed",
+                        width: 30,
+                        height: 30,
+                      ),
+                    ),
+                  ],
                   Positioned(
                     left: playerX / .1,
                     top: playerY / .1,
                     child: Container(
                       width: 50,
                       height: 50,
-                      decoration: const BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(75)),
-                          color: Colors.green),
+                      decoration: const BoxDecoration(color: Colors.green),
                     ),
                   ),
                   if (shopActive)
@@ -350,6 +410,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                     ),
+                  //if(craftingOpen) TODO,
                   if (invActive)
                     Center(
                       child: Container(
@@ -384,6 +445,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                     ),
+                  Center(child: Text(mineFeedback)),
                   Text(tutorial),
                 ],
               ),
@@ -415,8 +477,12 @@ class ItemRenderer extends StatelessWidget {
         width: width,
       );
     }
-    if (item == "wood") {
-      return WoodRenderer(width: width, height: height);
+    if (item.contains(".") && item.substring(0, item.indexOf(".")) == "wood") {
+      return WoodRenderer(
+        placed: item.substring(item.indexOf(".") + 1) == "placed",
+        height: height,
+        width: width,
+      );
     }
     return Text(
       "unknown key $item",
