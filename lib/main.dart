@@ -410,41 +410,41 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                     ),
-                  //if(craftingOpen) TODO,
-                  if (invActive)
-                    Center(
-                      child: Container(
-                        width: 300,
-                        height: 300,
-                        color: Colors.black,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.vertical,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: inv.keys
-                                .map(
-                                  (a) => Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      ItemRenderer(
-                                        a,
-                                        width: 30,
-                                        height: 30,
-                                      ),
-                                      Text(
-                                        "${inv[a]}",
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                                .toList(),
+                  if (craftingOpen)
+                    if (invActive)
+                      Center(
+                        child: Container(
+                          width: 300,
+                          height: 300,
+                          color: Colors.black,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: inv.keys
+                                  .map(
+                                    (a) => Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        ItemRenderer(
+                                          a,
+                                          width: 30,
+                                          height: 30,
+                                        ),
+                                        Text(
+                                          "${inv[a]}",
+                                          style: const TextStyle(
+                                              color: Colors.white),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   Center(child: Text(mineFeedback)),
                   Text(tutorial),
                 ],
