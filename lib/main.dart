@@ -411,40 +411,56 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                   if (craftingOpen)
-                    if (invActive)
-                      Center(
-                        child: Container(
-                          width: 300,
-                          height: 300,
-                          color: Colors.black,
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.vertical,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: inv.keys
-                                  .map(
-                                    (a) => Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        ItemRenderer(
-                                          a,
-                                          width: 30,
-                                          height: 30,
-                                        ),
-                                        Text(
-                                          "${inv[a]}",
-                                          style: const TextStyle(
-                                              color: Colors.white),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
+                    Row(
+                      children: [
+                        Column(
+                          children: [
+                            ItemDropdown(inv: inv),
+                            ItemDropdown(inv: inv),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            ItemDropdown(inv: inv),
+                            ItemDropdown(inv: inv),
+                          ],
+                        ),
+                      ],
+                    ),
+                  if (invActive)
+                    Center(
+                      child: Container(
+                        width: 300,
+                        height: 300,
+                        color: Colors.black,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: inv.keys
+                                .map(
+                                  (a) => Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      ItemRenderer(
+                                        a,
+                                        width: 30,
+                                        height: 30,
+                                      ),
+                                      Text(
+                                        "${inv[a]}",
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                                .toList(),
                           ),
                         ),
                       ),
+                    ),
                   Center(child: Text(mineFeedback)),
                   Text(tutorial),
                 ],
@@ -454,6 +470,34 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       );
     });
+  }
+}
+
+class ItemDropdown extends StatelessWidget {
+  const ItemDropdown({
+    Key? key,
+    required this.inv,
+  }) : super(key: key);
+
+  final Map<String, int> inv;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButton(
+      items: (inv.keys.followedBy(const ["none"]))
+          .map(
+            (String e) => DropdownMenuItem(
+              child: ItemRenderer(
+                e,
+                width: 30,
+                height: 30,
+              ),
+              value: e,
+            ),
+          )
+          .toList(),
+      value: "none",
+    );
   }
 }
 
@@ -484,6 +528,7 @@ class ItemRenderer extends StatelessWidget {
         width: width,
       );
     }
+    if (item == "none") return Container();
     return Text(
       "unknown key $item",
       style: const TextStyle(color: Colors.red),
