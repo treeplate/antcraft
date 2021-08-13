@@ -53,6 +53,8 @@ class _MyHomePageState extends State<MyHomePage> {
   bool craftingOpen = false;
 
   final Map<int, Map<int, Room>> rooms = {};
+
+  Table? tableOpen;
   Room get room {
     if (rooms[roomX] == null) {
       rooms[roomX] = {};
@@ -63,7 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
           Random().nextDouble() * (screenWidth - 15),
           Random().nextDouble() * (screenHeight - 15),
         ),
-        [],
+        {},
         (ores..shuffle()).first,
         roomX == 1 && roomY == 1,
         Offset(
@@ -173,7 +175,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     if (event.character == "q" && (inv['wood.raw'] ?? 0) > 0) {
       inv['wood.raw'] = inv['wood.raw']! - 1;
-      room.tables.add(Offset(playerX / 1, playerY / 1));
+      room.tables[Offset(playerX / 1, playerY / 1)] = Table();
     }
     if (event.character == "x" &&
         playerX > screenWidth / 2 - 7.5 &&
@@ -185,12 +187,15 @@ class _MyHomePageState extends State<MyHomePage> {
       shopActive = true;
     }
     if (event.character == "f") {
-      for (Offset logPos in room.tables) {
+      print("F pressed");
+      for (MapEntry<Offset, Table> table in room.tables.entries) {
+        Offset logPos = table.key;
         if (((logPos.dx > playerX && logPos.dx < playerX + 5) ||
                 (logPos.dx + 3 > playerX && logPos.dx + 3 < playerX + 5)) &&
             ((logPos.dy + 3 > playerY && logPos.dy + 3 < playerY + 5) ||
                 (logPos.dy > playerY && logPos.dy < playerY + 5))) {
-          craftingOpen = true;
+          print("Crafing opened");
+          tableOpen = table.value;
         }
       }
     }
@@ -318,7 +323,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       height: 30,
                     ),
                   ),
-                  for (Offset table in room.tables) ...[
+                  for (Offset table in room.tables.keys) ...[
                     if (debugMode)
                       Positioned(
                         left: table.dx * 10,
@@ -384,22 +389,65 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                     ),
-                  if (craftingOpen)
-                    Row(
-                      children: [
-                        Column(
+                  if (tableOpen != null)
+                    Center(
+                      child: Container(
+                        color: Colors.black,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            ItemDropdown(inv: inv),
-                            ItemDropdown(inv: inv),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ItemDropdown(
+                                  inv: inv,
+                                  onChanged: (String? value) {
+                                    setState(() {
+                                      tableOpen!.x0y0 = value!;
+                                    });
+                                  },
+                                  value: tableOpen!.x0y0,
+                                ),
+                                ItemDropdown(
+                                  inv: inv,
+                                  onChanged: (String? value) {
+                                    setState(() {
+                                      tableOpen!.x0y1 = value!;
+                                    });
+                                  },
+                                  value: tableOpen!.x0y1,
+                                ),
+                              ],
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ItemDropdown(
+                                  inv: inv,
+                                  onChanged: (String? value) {
+                                    setState(() {
+                                      tableOpen!.x1y0 = value!;
+                                    });
+                                  },
+                                  value: tableOpen!.x1y0,
+                                ),
+                                ItemDropdown(
+                                  inv: inv,
+                                  onChanged: (String? value) {
+                                    setState(() {
+                                      tableOpen!.x1y1 = value!;
+                                    });
+                                  },
+                                  value: tableOpen!.x1y1,
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                        Column(
-                          children: [
-                            ItemDropdown(inv: inv),
-                            ItemDropdown(inv: inv),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
                   if (invActive)
                     Center(
@@ -451,9 +499,13 @@ class ItemDropdown extends StatelessWidget {
   const ItemDropdown({
     Key? key,
     required this.inv,
+    required this.value,
+    required this.onChanged,
   }) : super(key: key);
 
   final Map<String, int> inv;
+  final String value;
+  final void Function(String? x) onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -470,7 +522,8 @@ class ItemDropdown extends StatelessWidget {
             ),
           )
           .toList(),
-      value: "none",
+      value: "wood.raw",
+      onChanged: onChanged,
     );
   }
 }
@@ -573,10 +626,17 @@ class DirectionalIntent extends Intent {
 
 class Room {
   Offset logPos;
-  final List<Offset> tables;
+  final Map<Offset, Table> tables;
   final String ore;
   final Offset orePos;
   final bool shop;
 
   Room(this.logPos, this.tables, this.ore, this.shop, this.orePos);
+}
+
+class Table {
+  String x0y0 = "none";
+  String x1y0 = "none";
+  String x0y1 = "none";
+  String x1y1 = "none";
 }
