@@ -45,53 +45,34 @@ class _MyHomePageState extends State<MyHomePage> {
   bool s = false;
 
   bool recentMined = false;
-  Map<int, Map<int, String>> roomOres = {
-    //1: {1: "none"},
-  };
-  Map<int, Map<int, Offset>> roomOrePositions = {};
   double screenWidth = 144;
   double screenHeight = 90;
-  Map<int, Map<int, Offset>> logPositions = {};
 
   final List<String> ores = ["ore.raw.iron", "ore.raw.gold"];
 
   bool craftingOpen = false;
-  String get roomOre {
-    if (roomOres[roomX] == null) {
-      roomOres[roomX] = {};
-      roomOrePositions[roomX] = {};
+
+  final Map<int, Map<int, Room>> rooms = {};
+  Room get room {
+    if (rooms[roomX] == null) {
+      rooms[roomX] = {};
     }
-    if (roomOres[roomX]![roomY] == null) {
-      roomOres[roomX]![roomY] = (ores..shuffle()).first;
-      roomOrePositions[roomX]![roomY] = Offset(
-        Random().nextDouble() * (screenWidth - 15),
-        Random().nextDouble() * (screenHeight - 15),
+    if (rooms[roomX]![roomY] == null) {
+      rooms[roomX]![roomY] = Room(
+        Offset(
+          Random().nextDouble() * (screenWidth - 15),
+          Random().nextDouble() * (screenHeight - 15),
+        ),
+        [],
+        (ores..shuffle()).first,
+        roomX == 1 && roomY == 1,
+        Offset(
+          Random().nextDouble() * (screenWidth - 15),
+          Random().nextDouble() * (screenHeight - 15),
+        ),
       );
     }
-    return roomOres[roomX]![roomY]!;
-  }
-
-  List<Offset> get roomTables {
-    if (totalTables[roomX] == null) {
-      totalTables[roomX] = {};
-    }
-    if (totalTables[roomX]![roomY] == null) {
-      totalTables[roomX]![roomY] = [];
-    }
-    return totalTables[roomX]![roomY]!;
-  }
-
-  Offset get logPos {
-    if (logPositions[roomX] == null) {
-      logPositions[roomX] = {};
-    }
-    if (logPositions[roomX]![roomY] == null) {
-      logPositions[roomX]![roomY] = Offset(
-        Random().nextDouble() * (screenWidth - 15),
-        Random().nextDouble() * (screenHeight - 15),
-      );
-    }
-    return logPositions[roomX]![roomY]!;
+    return rooms[roomX]![roomY]!;
   }
 
   String get tutorial {
@@ -116,10 +97,10 @@ class _MyHomePageState extends State<MyHomePage> {
         return "Go to the red square (the shop) and press x";
       }
     }
-    if (cooldown == 1 && roomOre == "ore.raw.iron") {
+    if (cooldown == 1 && room.ore == "ore.raw.iron") {
       return "Now that mining has a lower cooldown, mine iron in the iron mine (big square) until you get to twenty.";
     }
-    if (cooldown == 3 && roomOre == "ore.raw.gold") {
+    if (cooldown == 3 && room.ore == "ore.raw.gold") {
       return "Press a to go left and s to go down and d to go right: Go to the gold mine (the big square) and hold v to mine it.";
     }
     return "Go up (press w)";
@@ -176,12 +157,12 @@ class _MyHomePageState extends State<MyHomePage> {
     if (event.character == "v" && !recentMined) {
       recentMined = true;
       invOpened = false;
-      if (playerX > roomOrePositions[roomX]![roomY]!.dx &&
-          playerY > roomOrePositions[roomX]![roomY]!.dy &&
-          playerX < roomOrePositions[roomX]![roomY]!.dx + 30 &&
-          playerY < roomOrePositions[roomX]![roomY]!.dy + 30 &&
-          roomOre != "none") {
-        inv[roomOre] = (inv[roomOre] ?? 0) + 1;
+      if (playerX > room.orePos.dx &&
+          playerY > room.orePos.dy &&
+          playerX < room.orePos.dx + 30 &&
+          playerY < room.orePos.dy + 30 &&
+          room.ore != "none") {
+        inv[room.ore] = (inv[room.ore] ?? 0) + 1;
       } else {
         inv["ore.just.stone"] = (inv["ore.just.stone"] ?? 0) + 1;
       }
@@ -192,7 +173,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     if (event.character == "q" && (inv['wood.raw'] ?? 0) > 0) {
       inv['wood.raw'] = inv['wood.raw']! - 1;
-      roomTables.add(Offset(playerX / 1, playerY / 1));
+      room.tables.add(Offset(playerX / 1, playerY / 1));
     }
     if (event.character == "x" &&
         playerX > screenWidth / 2 - 7.5 &&
@@ -204,15 +185,11 @@ class _MyHomePageState extends State<MyHomePage> {
       shopActive = true;
     }
     if (event.character == "f") {
-      for (Offset logPos in roomTables) {
-        if ((logPos.dx > playerX &&
-                logPos.dx < playerX + 5 &&
-                logPos.dy > playerY &&
-                logPos.dy < playerY + 5) ||
-            (logPos.dx + 3 > playerX &&
-                logPos.dx + 3 < playerX + 5 &&
-                logPos.dy + 3 > playerY &&
-                logPos.dy + 3 < playerY + 5)) {
+      for (Offset logPos in room.tables) {
+        if (((logPos.dx > playerX && logPos.dx < playerX + 5) ||
+                (logPos.dx + 3 > playerX && logPos.dx + 3 < playerX + 5)) &&
+            ((logPos.dy + 3 > playerY && logPos.dy + 3 < playerY + 5) ||
+                (logPos.dy > playerY && logPos.dy < playerY + 5))) {
           craftingOpen = true;
         }
       }
@@ -254,15 +231,12 @@ class _MyHomePageState extends State<MyHomePage> {
       }
       playerX += xVel;
       playerY += yVel;
-      if ((logPos.dx > playerX &&
-              logPos.dx < playerX + 5 &&
-              logPos.dy > playerY &&
-              logPos.dy < playerY + 5) ||
-          (logPos.dx + 3 > playerX &&
-              logPos.dx + 3 < playerX + 5 &&
-              logPos.dy + 3 > playerY &&
-              logPos.dy + 3 < playerY + 5)) {
-        logPositions[roomX]![roomY] = const Offset(-30, -30);
+      if (((room.logPos.dx > playerX && room.logPos.dx < playerX + 5) ||
+              (room.logPos.dx + 3 > playerX &&
+                  room.logPos.dx + 3 < playerX + 5)) &&
+          ((room.logPos.dy + 3 > playerY && room.logPos.dy + 3 < playerY + 5) ||
+              (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
+        room.logPos = const Offset(-30, -30);
         if (inv['wood.raw'] == null) inv['wood.raw'] = 0;
         inv['wood.raw'] = inv['wood.raw']! + 1;
       }
@@ -295,10 +269,10 @@ class _MyHomePageState extends State<MyHomePage> {
               color: Colors.grey,
               child: Stack(
                 children: [
-                  if (roomOre != "none" && debugMode)
+                  if (room.ore != "none" && debugMode)
                     Positioned(
-                      left: roomOrePositions[roomX]![roomY]!.dx * 10,
-                      top: roomOrePositions[roomX]![roomY]!.dy * 10,
+                      left: room.orePos.dx * 10,
+                      top: room.orePos.dy * 10,
                       child: Container(
                         width: 150,
                         height: 150,
@@ -315,20 +289,20 @@ class _MyHomePageState extends State<MyHomePage> {
                         color: Colors.red,
                       ),
                     ),
-                  if (roomOre != "none")
+                  if (room.ore != "none")
                     Positioned(
-                      left: roomOrePositions[roomX]![roomY]!.dx * 10,
-                      top: roomOrePositions[roomX]![roomY]!.dy * 10,
+                      left: room.orePos.dx * 10,
+                      top: room.orePos.dy * 10,
                       child: ItemRenderer(
-                        roomOre,
+                        room.ore,
                         width: 150,
                         height: 150,
                       ),
                     ),
                   if (debugMode)
                     Positioned(
-                      left: logPos.dx * 10,
-                      top: logPos.dy * 10,
+                      left: room.logPos.dx * 10,
+                      top: room.logPos.dy * 10,
                       child: Container(
                         width: 30,
                         height: 30,
@@ -336,15 +310,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                   Positioned(
-                    left: logPos.dx * 10,
-                    top: logPos.dy * 10,
+                    left: room.logPos.dx * 10,
+                    top: room.logPos.dy * 10,
                     child: const ItemRenderer(
                       "wood.raw",
                       width: 30,
                       height: 30,
                     ),
                   ),
-                  for (Offset table in roomTables) ...[
+                  for (Offset table in room.tables) ...[
                     if (debugMode)
                       Positioned(
                         left: table.dx * 10,
@@ -595,4 +569,14 @@ class DirectionalIntent extends Intent {
   const DirectionalIntent(this.x, this.y);
   final int x;
   final int y;
+}
+
+class Room {
+  Offset logPos;
+  final List<Offset> tables;
+  final String ore;
+  final Offset orePos;
+  final bool shop;
+
+  Room(this.logPos, this.tables, this.ore, this.shop, this.orePos);
 }
