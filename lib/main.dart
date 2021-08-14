@@ -445,6 +445,16 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                               ],
                             ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextButton(
+                                  onPressed: () => tableOpen = null,
+                                  child: const Text("Close menu"),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -522,7 +532,7 @@ class ItemDropdown extends StatelessWidget {
             ),
           )
           .toList(),
-      value: "wood.raw",
+      value: value,
       onChanged: onChanged,
     );
   }
