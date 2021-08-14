@@ -102,7 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (cooldown == 1 && room.ore == "ore.raw.iron") {
       return "Now that mining has a lower cooldown, mine iron in the iron mine (big square) until you get to twenty.";
     }
-    if (cooldown == 3 && room.ore == "ore.raw.gold") {
+    if (cooldown == 2 && room.ore == "ore.raw.gold") {
       return "Press a to go left and s to go down and d to go right: Go to the gold mine (the big square) and hold v to mine it.";
     }
     return "Go up (press w)";
@@ -207,7 +207,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   String mineFeedback = "";
-  int cooldown = 3;
+  int cooldown = 2;
   int playerX = 0;
   int playerY = 0;
   int xVel = 0;
@@ -360,7 +360,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            if (cooldown == 3)
+                            if (cooldown == 2)
                               ShopItem(
                                 5,
                                 () {
@@ -401,23 +401,15 @@ class _MyHomePageState extends State<MyHomePage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                ItemDropdown(
+                                TableSlotDropdown(
                                   inv: inv,
-                                  onChanged: (String? value) {
-                                    setState(() {
-                                      tableOpen!.x0y0 = value!;
-                                    });
-                                  },
-                                  value: tableOpen!.x0y0,
+                                  slotKey: SlotKey.x0y0,
+                                  table: tableOpen!,
                                 ),
-                                ItemDropdown(
+                                TableSlotDropdown(
                                   inv: inv,
-                                  onChanged: (String? value) {
-                                    setState(() {
-                                      tableOpen!.x0y1 = value!;
-                                    });
-                                  },
-                                  value: tableOpen!.x0y1,
+                                  slotKey: SlotKey.x0y1,
+                                  table: tableOpen!,
                                 ),
                               ],
                             ),
@@ -425,23 +417,15 @@ class _MyHomePageState extends State<MyHomePage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                ItemDropdown(
+                                TableSlotDropdown(
                                   inv: inv,
-                                  onChanged: (String? value) {
-                                    setState(() {
-                                      tableOpen!.x1y0 = value!;
-                                    });
-                                  },
-                                  value: tableOpen!.x1y0,
+                                  slotKey: SlotKey.x1y0,
+                                  table: tableOpen!,
                                 ),
-                                ItemDropdown(
+                                TableSlotDropdown(
                                   inv: inv,
-                                  onChanged: (String? value) {
-                                    setState(() {
-                                      tableOpen!.x1y1 = value!;
-                                    });
-                                  },
-                                  value: tableOpen!.x1y1,
+                                  slotKey: SlotKey.x1y1,
+                                  table: tableOpen!,
                                 ),
                               ],
                             ),
@@ -534,6 +518,46 @@ class ItemDropdown extends StatelessWidget {
           .toList(),
       value: value,
       onChanged: onChanged,
+    );
+  }
+}
+
+class TableSlotDropdown extends StatefulWidget {
+  const TableSlotDropdown({
+    Key? key,
+    required this.inv,
+    required this.slotKey,
+    required this.table,
+  }) : super(key: key);
+
+  final Map<String, int> inv;
+  final SlotKey slotKey;
+  final Table table;
+  @override
+  _TableSlotDropdownState createState() => _TableSlotDropdownState();
+}
+
+class _TableSlotDropdownState extends State<TableSlotDropdown> {
+  @override
+  Widget build(BuildContext context) {
+    return ItemDropdown(
+      inv: widget.inv,
+      value: widget.table.grid[widget.slotKey]!,
+      onChanged: (String? value) {
+        setState(() {
+          if (value == "none" || widget.inv[value]! > 0) {
+            if (widget.table.grid[widget.slotKey] != "none") {
+              widget.inv[widget.table.grid[widget.slotKey]!] =
+                  widget.inv[widget.table.grid[widget.slotKey]!]! + 1;
+            }
+
+            if (value! != "none") {
+              widget.inv[value] = widget.inv[value]! - 1;
+            }
+            widget.table.grid[widget.slotKey] = value;
+          }
+        });
+      },
     );
   }
 }
@@ -644,9 +668,13 @@ class Room {
   Room(this.logPos, this.tables, this.ore, this.shop, this.orePos);
 }
 
+enum SlotKey { x0y0, x0y1, x1y0, x1y1 }
+
 class Table {
-  String x0y0 = "none";
-  String x1y0 = "none";
-  String x0y1 = "none";
-  String x1y1 = "none";
+  Map<SlotKey, String> grid = {
+    SlotKey.x0y0: "none",
+    SlotKey.x0y1: "none",
+    SlotKey.x1y0: "none",
+    SlotKey.x1y1: "none",
+  };
 }
