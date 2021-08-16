@@ -11,11 +11,6 @@ import 'package:flutter/services.dart';
 import 'images.dart';
 
 const bool debugMode = false;
-Map<String, MaterialColor> oreColors = {
-  "gold": Colors.yellow,
-  "iron": Colors.blue,
-  "stone": Colors.grey,
-};
 void main() {
   runApp(const MyApp());
 }
@@ -48,7 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
   double screenWidth = 144;
   double screenHeight = 90;
 
-  final List<String> ores = ["ore.raw.iron", "ore.raw.gold"];
+  final List<String> ores = ["ore.raw.iron"];
 
   bool craftingOpen = false;
 
@@ -80,35 +75,43 @@ class _MyHomePageState extends State<MyHomePage> {
   String get tutorial {
     if (won) return "You Won!";
     if (shopActive) {
-      if ((inv['ore.raw.iron'] ?? 0) >= 20) {
+      if ((inv['furnace'] ?? 0) >= 1) {
         return "Win the game by buying the 'Win game' item";
       }
-      if ((inv['ore.raw.gold'] ?? 0) >= 5) return "Buy a better pick.";
-      return "Remember to get gold before you go to the shop. (press Leave shop)";
+      return "Remember to get a furnace before you go to the shop. (press Leave shop)";
     }
-    if (((inv['ore.raw.iron'] ?? 0) >= 20 && (roomX != 1 || roomY != 1)) ||
-        ((inv['ore.raw.gold'] ?? 0) >= 5 && (roomX != 1 || roomY != 1))) {
-      if (roomX > 1) return "Go left";
-      if (roomX < 1) return "Go right";
-      if (roomY > 1) return "Go up (press w)";
-      return "Go down";
-    }
+
     if (roomX == 1 && roomY == 1) {
-      if (((inv['ore.raw.gold'] ?? 0) >= 5) ||
-          (inv['ore.raw.iron'] ?? 0) >= 20) {
+      if ((inv['furnace'] ?? 0) >= 1) {
         return "Go to the red square (the shop) and press x";
       }
     }
-    if (cooldown == 1 && room.ore == "ore.raw.iron") {
-      return "Now that mining has a lower cooldown, mine iron in the iron mine (big square) until you get to twenty.";
+    if ((inv['furnace'] ?? 0) >= 1) {
+      if (tableOpen != null) return "Press the X button";
+      if (roomX > 1) return "Go left (press a)";
+      if (roomX < 1) return "Go right (press d)";
+      if (roomY > 1) return "Go up (press w)";
+      return "Go down (press s)";
     }
-    if (cooldown == 2 && room.ore == "ore.raw.gold") {
-      return "Press a to go left and s to go down and d to go right: Go to the gold mine (the big square) and hold v to mine it.";
+    if ((tableOpen?.result ?? "none") == "furnace") {
+      return "Take your furnace (the new icon) by clicking on it.";
     }
-    return "Go up (press w)";
+    if ((inv['ore.just.stone'] ?? 0) < 2) {
+      return "Press v on the gray floor to get some grey stone.";
+    }
+    if (tableOpen != null) {
+      return "Set the top-left and bottom-right dropdowns to stone.";
+    }
+    if (woodPlaced) {
+      return "Press f on your placed wood to open it.";
+    }
+    if ((inv['wood.raw'] ?? 0) >= 1) {
+      return "Press q to place your wood.";
+    }
+    return "Walk over a wood log to get some wood.";
   }
 
-  bool invOpened = false;
+  bool woodPlaced = false;
 
   bool won = false;
   KeyEventResult _handleKeyPress(FocusNode node, RawKeyEvent event) {
@@ -158,7 +161,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     if (event.character == "v" && !recentMined) {
       recentMined = true;
-      invOpened = false;
       if (playerX > room.orePos.dx &&
           playerY > room.orePos.dy &&
           playerX < room.orePos.dx + 30 &&
@@ -174,8 +176,14 @@ class _MyHomePageState extends State<MyHomePage> {
       Timer(Duration(seconds: cooldown), () => recentMined = false);
     }
     if (event.character == "q" && (inv['wood.raw'] ?? 0) > 0) {
+      woodPlaced = true;
       inv['wood.raw'] = inv['wood.raw']! - 1;
       room.tables[Offset(playerX / 1, playerY / 1)] = Table();
+    }
+    if (event.character == "c" && (inv['robot'] ?? 0) > 0) {
+      woodPlaced = true;
+      inv['robot'] = inv['robot']! - 1;
+      robots[IntegerOffset(roomX, roomY)] = Offset(playerX / 1, playerY / 1);
     }
     if (event.character == "x" &&
         playerX > screenWidth / 2 - 7.5 &&
@@ -187,20 +195,17 @@ class _MyHomePageState extends State<MyHomePage> {
       shopActive = true;
     }
     if (event.character == "f") {
-      print("F pressed");
       for (MapEntry<Offset, Table> table in room.tables.entries) {
         Offset logPos = table.key;
         if (((logPos.dx > playerX && logPos.dx < playerX + 5) ||
                 (logPos.dx + 3 > playerX && logPos.dx + 3 < playerX + 5)) &&
             ((logPos.dy + 3 > playerY && logPos.dy + 3 < playerY + 5) ||
                 (logPos.dy > playerY && logPos.dy < playerY + 5))) {
-          print("Crafing opened");
           tableOpen = table.value;
         }
       }
     }
     if (event.character == "e") {
-      invOpened = true;
       invActive = !invActive;
     }
     return KeyEventResult.handled;
@@ -242,8 +247,68 @@ class _MyHomePageState extends State<MyHomePage> {
           ((room.logPos.dy + 3 > playerY && room.logPos.dy + 3 < playerY + 5) ||
               (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
         room.logPos = const Offset(-30, -30);
-        if (inv['wood.raw'] == null) inv['wood.raw'] = 0;
-        inv['wood.raw'] = inv['wood.raw']! + 1;
+        inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
+      }
+      for (MapEntry<IntegerOffset, Offset> robot in robots.entries.toList()) {
+        if (rooms[robot.key.x] == null) {
+          rooms[robot.key.x] = {};
+        }
+        if (rooms[robot.key.x]![robot.key.y] == null) {
+          rooms[robot.key.x]![robot.key.y] = Room(
+            Offset(
+              Random().nextDouble() * (screenWidth - 15),
+              Random().nextDouble() * (screenHeight - 15),
+            ),
+            {},
+            (ores..shuffle()).first,
+            robot.key.x == 1 && robot.key.y == 1,
+            Offset(
+              Random().nextDouble() * (screenWidth - 15),
+              Random().nextDouble() * (screenHeight - 15),
+            ),
+          );
+        }
+        Room room = rooms[robot.key.x]![robot.key.y]!;
+        if (robot.value == room.logPos) {
+          inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
+          room.logPos = const Offset(-30, -30);
+        }
+
+        if (robot.value.dx > room.logPos.dx) {
+          print("hi (${robots[robot.key]}");
+          robots[robot.key] = Offset(robot.value.dx - 1, robot.value.dy);
+          print("by (${robots[robot.key]}");
+        }
+        if (robot.value.dx < room.logPos.dx) {
+          print("help");
+          robots[robot.key] = Offset(robot.value.dx + 1, robot.value.dy);
+        }
+        if (robot.value.dy > room.logPos.dy) {
+          robots[robot.key] = Offset(robot.value.dx, robot.value.dy - 1);
+        }
+        if (robot.value.dy < room.logPos.dy) {
+          robots[robot.key] = Offset(robot.value.dx, robot.value.dy + 1);
+        }
+        if (robot.value.dx <= 0) {
+          robots.remove(robot.key);
+          robots[IntegerOffset(robot.key.x - 1, robot.key.y)] =
+              Offset(screenWidth / 1 - 1, robot.value.dy);
+        }
+        if (robot.value.dx >= screenWidth) {
+          robots.remove(robot.key);
+          robots[IntegerOffset(robot.key.x + 1, robot.key.y)] =
+              Offset(1, robot.value.dy);
+        }
+        if (robot.value.dy <= 0) {
+          robots.remove(robot.key);
+          robots[IntegerOffset(robot.key.x, robot.key.y - 1)] =
+              Offset(robot.value.dx, screenHeight / 1 - 1);
+        }
+        if (robot.value.dy >= screenHeight) {
+          robots.remove(robot.key);
+          robots[IntegerOffset(robot.key.x, robot.key.y + 1)] =
+              Offset(robot.value.dx, 1);
+        }
       }
     });
   });
@@ -344,6 +409,32 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                   ],
+                  for (Offset robot in robots.entries
+                      .where(
+                        (element) =>
+                            element.key.x == roomX && element.key.y == roomY,
+                      )
+                      .map((e) => e.value)) ...[
+                    if (debugMode)
+                      Positioned(
+                        left: robot.dx * 10,
+                        top: robot.dy * 10,
+                        child: Container(
+                          color: Colors.green,
+                          width: 30,
+                          height: 30,
+                        ),
+                      ),
+                    Positioned(
+                      left: robot.dx * 10,
+                      top: robot.dy * 10,
+                      child: const ItemRenderer(
+                        "robot",
+                        width: 30,
+                        height: 30,
+                      ),
+                    ),
+                  ],
                   Positioned(
                     left: playerX / .1,
                     top: playerY / .1,
@@ -360,27 +451,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            if (cooldown == 2)
-                              ShopItem(
-                                5,
-                                () {
-                                  cooldown = 1;
-                                  shopActive = false;
-                                },
-                                "Better pick",
-                                (inv["ore.raw.gold"] ?? 0),
-                                (g) => inv["ore.raw.gold"] = g,
-                                goldKey: "ore.raw.gold",
-                              ),
                             ShopItem(
-                              20,
+                              1,
                               () {
                                 won = true;
                               },
                               "Win game",
-                              (inv["ore.raw.iron"] ?? 0),
-                              (g) => inv["ore.raw.iron"] = g,
-                              goldKey: "ore.raw.iron",
+                              (inv["furnace"] ?? 0),
+                              (g) => inv["furnace"] = g,
+                              goldKey: "furnace",
                             ),
                             TextButton(
                                 onPressed: () => shopActive = false,
@@ -435,7 +514,29 @@ class _MyHomePageState extends State<MyHomePage> {
                               children: [
                                 TextButton(
                                   onPressed: () => tableOpen = null,
-                                  child: const Text("Close menu"),
+                                  child: const Text("X"),
+                                ),
+                                TextButton(
+                                  onPressed: tableOpen!.result == "none"
+                                      ? null
+                                      : () {
+                                          setState(() {
+                                            inv[tableOpen!.result] =
+                                                (inv[tableOpen!.result] ?? 0) +
+                                                    1;
+                                            tableOpen!.grid = {
+                                              SlotKey.x0y0: "none",
+                                              SlotKey.x0y1: "none",
+                                              SlotKey.x1y0: "none",
+                                              SlotKey.x1y1: "none",
+                                            };
+                                          });
+                                        },
+                                  child: ItemRenderer(
+                                    tableOpen!.result,
+                                    width: 30,
+                                    height: 30,
+                                  ),
                                 ),
                               ],
                             ),
@@ -487,6 +588,15 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     });
   }
+
+  final Map<IntegerOffset, Offset> robots = {};
+}
+
+class IntegerOffset {
+  final int x;
+  final int y;
+
+  IntegerOffset(this.x, this.y);
 }
 
 class ItemDropdown extends StatelessWidget {
@@ -558,41 +668,6 @@ class _TableSlotDropdownState extends State<TableSlotDropdown> {
           }
         });
       },
-    );
-  }
-}
-
-class ItemRenderer extends StatelessWidget {
-  final String item;
-
-  const ItemRenderer(this.item,
-      {Key? key, required this.width, required this.height})
-      : super(key: key);
-  final double width;
-  final double height;
-  @override
-  Widget build(BuildContext context) {
-    if (item.contains(".") && item.substring(0, item.indexOf(".")) == "ore") {
-      return OreRenderer(
-        color: oreColors[item.substring(item.lastIndexOf(".") + 1)]!,
-        smelted:
-            !(item.substring(item.indexOf(".") + 1, item.lastIndexOf(".")) ==
-                "raw"),
-        height: height,
-        width: width,
-      );
-    }
-    if (item.contains(".") && item.substring(0, item.indexOf(".")) == "wood") {
-      return WoodRenderer(
-        placed: item.substring(item.indexOf(".") + 1) == "placed",
-        height: height,
-        width: width,
-      );
-    }
-    if (item == "none") return Container();
-    return Text(
-      "unknown key $item",
-      style: const TextStyle(color: Colors.red),
     );
   }
 }
@@ -677,4 +752,20 @@ class Table {
     SlotKey.x1y0: "none",
     SlotKey.x1y1: "none",
   };
+
+  String get result {
+    if (grid[SlotKey.x0y0] == "ore.just.stone" &&
+        grid[SlotKey.x1y0] == "none" &&
+        grid[SlotKey.x0y1] == "none" &&
+        grid[SlotKey.x1y1] == "ore.just.stone") {
+      return "furnace";
+    }
+    if (grid[SlotKey.x0y0] == "ore.raw.iron" &&
+        grid[SlotKey.x1y0] == "none" &&
+        grid[SlotKey.x0y1] == "none" &&
+        grid[SlotKey.x1y1] == "none") {
+      return "robot";
+    }
+    return "none";
+  }
 }
