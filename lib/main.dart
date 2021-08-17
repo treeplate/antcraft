@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print
+// ignore_for_file: avoid_//
 
 import 'dart:async';
 import 'dart:math';
@@ -57,15 +57,15 @@ class _MyHomePageState extends State<MyHomePage> {
     if (rooms[roomX]![roomY] == null) {
       rooms[roomX]![roomY] = Room(
         Offset(
-          Random().nextDouble() * (screenWidth - 15),
-          Random().nextDouble() * (screenHeight - 15),
+          (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
+          (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
         ),
         {},
         (ores..shuffle()).first,
-        roomX == 1 && roomY == 1,
+        playerX == 1 && playerY == 1,
         Offset(
-          Random().nextDouble() * (screenWidth - 15),
-          Random().nextDouble() * (screenHeight - 15),
+          (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
+          (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
         ),
       );
     }
@@ -246,7 +246,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   room.logPos.dx + 3 < playerX + 5)) &&
           ((room.logPos.dy + 3 > playerY && room.logPos.dy + 3 < playerY + 5) ||
               (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
-        room.logPos = const Offset(-30, -30);
+        room.logPos = ([
+          Offset(screenWidth + 30, screenHeight + 30),
+          const Offset(-30, -30),
+          Offset(screenWidth + 30, -30),
+          Offset(-30, screenHeight + 30)
+        ]..shuffle(Random(room.logPos.dx.ceil())))
+            .first;
+
         inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
       }
       for (MapEntry<IntegerOffset, Offset> robot in robots.entries.toList()) {
@@ -256,43 +263,64 @@ class _MyHomePageState extends State<MyHomePage> {
         if (rooms[robot.key.x]![robot.key.y] == null) {
           rooms[robot.key.x]![robot.key.y] = Room(
             Offset(
-              Random().nextDouble() * (screenWidth - 15),
-              Random().nextDouble() * (screenHeight - 15),
+              (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
+              (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
             ),
             {},
             (ores..shuffle()).first,
             robot.key.x == 1 && robot.key.y == 1,
             Offset(
-              Random().nextDouble() * (screenWidth - 15),
-              Random().nextDouble() * (screenHeight - 15),
+              (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
+              (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
             ),
           );
         }
         Room room = rooms[robot.key.x]![robot.key.y]!;
+
+        //("Pre-move ${robot.key.hashCode} pos ${robots[robot.key]} logpos ${room.logPos}");
         if (robot.value == room.logPos) {
           inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
-          room.logPos = const Offset(-30, -30);
+          room.logPos = ([
+            Offset(screenWidth + 30, screenHeight + 30),
+            const Offset(-30, -30),
+            Offset(screenWidth + 30, -30),
+            Offset(-30, screenHeight + 30)
+          ]..shuffle(Random(room.logPos.dx.ceil())))
+              .first;
         }
 
         if (robot.value.dx > room.logPos.dx) {
-          print("hi (${robots[robot.key]}");
-          robots[robot.key] = Offset(robot.value.dx - 1, robot.value.dy);
-          print("by (${robots[robot.key]}");
+          //("L.${robot.key.hashCode} pos ${robots[robot.key]}");
+          robots[robot.key] = Offset(robot.value.dx - .5, robot.value.dy);
+          //("L.${robot.key.hashCode} postpos ${robots[robot.key]}");
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dx < room.logPos.dx) {
-          print("help");
-          robots[robot.key] = Offset(robot.value.dx + 1, robot.value.dy);
+          //("R.${robot.key.hashCode} pos ${robots[robot.key]}");
+          robots[robot.key] = Offset(robot.value.dx + .5, robot.value.dy);
+          //("R.${robot.key.hashCode} postpos ${robots[robot.key]}");
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dy > room.logPos.dy) {
-          robots[robot.key] = Offset(robot.value.dx, robot.value.dy - 1);
+          //("U.${robot.key.hashCode} pos ${robots[robot.key]}");
+          robots[robot.key] = Offset(robot.value.dx, robot.value.dy - .5);
+          //("U.${robot.key.hashCode} postpos ${robots[robot.key]}");
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dy < room.logPos.dy) {
-          robots[robot.key] = Offset(robot.value.dx, robot.value.dy + 1);
+          //("D.${robot.key.hashCode} pos ${robots[robot.key]}");
+          robots[robot.key] = Offset(robot.value.dx, robot.value.dy + .5);
+          //("D.${robot.key.hashCode} postpos ${robots[robot.key]}");
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dx <= 0) {
           robots.remove(robot.key);
           robots[IntegerOffset(robot.key.x - 1, robot.key.y)] =
-              Offset(screenWidth / 1 - 1, robot.value.dy);
+              Offset(screenWidth.roundToDouble() - 1, robot.value.dy);
         }
         if (robot.value.dx >= screenWidth) {
           robots.remove(robot.key);
@@ -302,13 +330,14 @@ class _MyHomePageState extends State<MyHomePage> {
         if (robot.value.dy <= 0) {
           robots.remove(robot.key);
           robots[IntegerOffset(robot.key.x, robot.key.y - 1)] =
-              Offset(robot.value.dx, screenHeight / 1 - 1);
+              Offset(robot.value.dx, screenHeight.roundToDouble() - 1);
         }
         if (robot.value.dy >= screenHeight) {
           robots.remove(robot.key);
           robots[IntegerOffset(robot.key.x, robot.key.y + 1)] =
               Offset(robot.value.dx, 1);
         }
+        //("Post-move ${robot.key.hashCode} pos ${robots[robot.key]}");
       }
     });
   });
@@ -410,6 +439,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ],
                   for (Offset robot in robots.entries
+                      .toList()
                       .where(
                         (element) =>
                             element.key.x == roomX && element.key.y == roomY,
@@ -430,6 +460,40 @@ class _MyHomePageState extends State<MyHomePage> {
                       top: robot.dy * 10,
                       child: const ItemRenderer(
                         "robot",
+                        width: 30,
+                        height: 30,
+                      ),
+                    ),
+                  ],
+                  Positioned(
+                    left: playerX / .1,
+                    top: playerY / .1,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(color: Colors.green),
+                    ),
+                  ),
+                  for (IntegerOffset robot in robots.entries
+                      .toList()
+                      .where(
+                        (element) =>
+                            !(element.key.x == roomX && element.key.y == roomY),
+                      )
+                      .map((e) => e.key)) ...[
+                    Positioned(
+                      left: robot.x < roomX
+                          ? 0
+                          : robot.x > roomX
+                              ? (screenWidth * 10) - 30
+                              : (screenWidth * 5) - 30,
+                      top: robot.y < roomY
+                          ? 0
+                          : robot.y > roomY
+                              ? (screenHeight * 10) - 30
+                              : (screenHeight * 5) - 30,
+                      child: const ItemRenderer(
+                        "furnace",
                         width: 30,
                         height: 30,
                       ),
