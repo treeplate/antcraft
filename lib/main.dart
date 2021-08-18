@@ -246,8 +246,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   room.logPos.dx + 3 < playerX + 5)) &&
           ((room.logPos.dy + 3 > playerY && room.logPos.dy + 3 < playerY + 5) ||
               (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
-        room.logPos = ([const Offset(-30, -30), Offset(-30, screenHeight + 30)]
-              ..shuffle(Random(room.logPos.dx.ceil())))
+        room.logPos = ([
+          const Offset(-30, -30),
+          Offset(-30, screenHeight + 30),
+        ]..shuffle(Random(room.logPos.dx.ceil())))
             .first;
 
         inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
@@ -279,7 +281,7 @@ class _MyHomePageState extends State<MyHomePage> {
           inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
           room.logPos = ([
             const Offset(-30, -30),
-            Offset(-30, screenHeight + 30)
+            Offset(-30, screenHeight + 30),
           ]..shuffle(Random(room.logPos.dx.ceil())))
               .first;
         }
