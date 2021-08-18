@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_//
+// ignore_for_file: avoid_print
 
 import 'dart:async';
 import 'dart:math';
@@ -246,16 +246,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   room.logPos.dx + 3 < playerX + 5)) &&
           ((room.logPos.dy + 3 > playerY && room.logPos.dy + 3 < playerY + 5) ||
               (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
-        room.logPos = ([
-          Offset(screenWidth + 30, screenHeight + 30),
-          const Offset(-30, -30),
-          Offset(screenWidth + 30, -30),
-          Offset(-30, screenHeight + 30)
-        ]..shuffle(Random(room.logPos.dx.ceil())))
+        room.logPos = ([const Offset(-30, -30), Offset(-30, screenHeight + 30)]
+              ..shuffle(Random(room.logPos.dx.ceil())))
             .first;
 
         inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
       }
+      print(robots.entries.length);
       for (MapEntry<IntegerOffset, Offset> robot in robots.entries.toList()) {
         if (rooms[robot.key.x] == null) {
           rooms[robot.key.x] = {};
@@ -281,9 +278,7 @@ class _MyHomePageState extends State<MyHomePage> {
         if (robot.value == room.logPos) {
           inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
           room.logPos = ([
-            Offset(screenWidth + 30, screenHeight + 30),
             const Offset(-30, -30),
-            Offset(screenWidth + 30, -30),
             Offset(-30, screenHeight + 30)
           ]..shuffle(Random(room.logPos.dx.ceil())))
               .first;
@@ -321,16 +316,19 @@ class _MyHomePageState extends State<MyHomePage> {
           robots.remove(robot.key);
           robots[IntegerOffset(robot.key.x - 1, robot.key.y)] =
               Offset(screenWidth.roundToDouble() - 1, robot.value.dy);
+          robot = robots.entries.toList()[robots.keys.length - 1];
         }
         if (robot.value.dx >= screenWidth) {
           robots.remove(robot.key);
           robots[IntegerOffset(robot.key.x + 1, robot.key.y)] =
               Offset(1, robot.value.dy);
+          robot = robots.entries.toList()[robots.keys.length - 1];
         }
         if (robot.value.dy <= 0) {
           robots.remove(robot.key);
           robots[IntegerOffset(robot.key.x, robot.key.y - 1)] =
               Offset(robot.value.dx, screenHeight.roundToDouble() - 1);
+          robot = robots.entries.toList()[robots.keys.length - 1];
         }
         if (robot.value.dy >= screenHeight) {
           robots.remove(robot.key);
