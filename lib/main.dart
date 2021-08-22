@@ -183,7 +183,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (event.character == "c" && (inv['robot'] ?? 0) > 0) {
       woodPlaced = true;
       inv['robot'] = inv['robot']! - 1;
-      robots[IntegerOffset(roomX, roomY)] = Offset(playerX / 1, playerY / 1);
+      robots[IntegerOffset(roomX, roomY)] = Robot(playerX / 1, playerY / 1);
     }
     if (event.character == "x" &&
         playerX > screenWidth / 2 - 7.5 &&
@@ -252,8 +252,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
         inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
       }
-      print(robots.entries.length);
-      for (MapEntry<IntegerOffset, Offset> robot in robots.entries.toList()) {
+      for (MapEntry<IntegerOffset, Robot> robot in robots.entries.toList()) {
         if (rooms[robot.key.x] == null) {
           rooms[robot.key.x] = {};
         }
@@ -275,66 +274,102 @@ class _MyHomePageState extends State<MyHomePage> {
         Room room = rooms[robot.key.x]![robot.key.y]!;
 
         //("Pre-move ${robot.key.hashCode} pos ${robots[robot.key]} logpos ${room.logPos}");
-        if (robot.value == room.logPos) {
-          inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
+        if (Offset(robot.value.dx, robot.value.dy) == room.logPos) {
+          robots[robot.key] =
+              Robot(robot.value.dx, robot.value.dy, robot.value.inv + 1);
+          robot = MapEntry(robot.key, robots[robot.key]!);
           room.logPos = ([
             const Offset(-30, -30),
             Offset(-30, screenHeight + 30)
           ]..shuffle(Random(room.logPos.dx.ceil())))
               .first;
         }
-
-        if (robot.value.dx > room.logPos.dx) {
-          //("L.${robot.key.hashCode} pos ${robots[robot.key]}");
-          robots[robot.key] = Offset(robot.value.dx - .5, robot.value.dy);
-          //("L.${robot.key.hashCode} postpos ${robots[robot.key]}");
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
-        }
-        if (robot.value.dx < room.logPos.dx) {
-          //("R.${robot.key.hashCode} pos ${robots[robot.key]}");
-          robots[robot.key] = Offset(robot.value.dx + .5, robot.value.dy);
-          //("R.${robot.key.hashCode} postpos ${robots[robot.key]}");
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
-        }
-        if (robot.value.dy > room.logPos.dy) {
-          //("U.${robot.key.hashCode} pos ${robots[robot.key]}");
-          robots[robot.key] = Offset(robot.value.dx, robot.value.dy - .5);
-          //("U.${robot.key.hashCode} postpos ${robots[robot.key]}");
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
-        }
-        if (robot.value.dy < room.logPos.dy) {
-          //("D.${robot.key.hashCode} pos ${robots[robot.key]}");
-          robots[robot.key] = Offset(robot.value.dx, robot.value.dy + .5);
-          //("D.${robot.key.hashCode} postpos ${robots[robot.key]}");
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+        print(robot.value.inv);
+        if (robot.value.inv < 5) {
+          if (robot.value.dx > room.logPos.dx) {
+            //("L.${robot.key.hashCode} pos ${robots[robot.key]}");
+            robots[robot.key] =
+                Robot(robot.value.dx - .5, robot.value.dy, robot.value.inv);
+            //("L.${robot.key.hashCode} postpos ${robots[robot.key]}");
+            robot = robots.entries
+                .toList()[robots.keys.toList().indexOf(robot.key)];
+          }
+          if (robot.value.dx < room.logPos.dx) {
+            //("R.${robot.key.hashCode} pos ${robots[robot.key]}");
+            robots[robot.key] =
+                Robot(robot.value.dx + .5, robot.value.dy, robot.value.inv);
+            //("R.${robot.key.hashCode} postpos ${robots[robot.key]}");
+            robot = robots.entries
+                .toList()[robots.keys.toList().indexOf(robot.key)];
+          }
+          if (robot.value.dy > room.logPos.dy) {
+            //("U.${robot.key.hashCode} pos ${robots[robot.key]}");
+            robots[robot.key] =
+                Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
+            //("U.${robot.key.hashCode} postpos ${robots[robot.key]}");
+            robot = robots.entries
+                .toList()[robots.keys.toList().indexOf(robot.key)];
+          }
+          if (robot.value.dy < room.logPos.dy) {
+            //("D.${robot.key.hashCode} pos ${robots[robot.key]}");
+            robots[robot.key] =
+                Robot(robot.value.dx, robot.value.dy + .5, robot.value.inv);
+            //("D.${robot.key.hashCode} postpos ${robots[robot.key]}");
+            robot = robots.entries
+                .toList()[robots.keys.toList().indexOf(robot.key)];
+          }
+        } else {
+          if (robot.key.x > roomX) {
+            robots[robot.key] =
+                Robot(robot.value.dx - .5, robot.value.dy, robot.value.inv);
+            robot = robots.entries
+                .toList()[robots.keys.toList().indexOf(robot.key)];
+          }
+          if (robot.key.x < roomX) {
+            robots[robot.key] =
+                Robot(robot.value.dx + .5, robot.value.dy, robot.value.inv);
+            robot = robots.entries
+                .toList()[robots.keys.toList().indexOf(robot.key)];
+          }
+          if (robot.key.y < roomY) {
+            robots[robot.key] =
+                Robot(robot.value.dx, robot.value.dy + .5, robot.value.inv);
+            robot = robots.entries
+                .toList()[robots.keys.toList().indexOf(robot.key)];
+          }
+          if (robot.key.y > roomY) {
+            robots[robot.key] =
+                Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
+            robot = robots.entries
+                .toList()[robots.keys.toList().indexOf(robot.key)];
+          }
         }
         if (robot.value.dx <= 0) {
           robots.remove(robot.key);
-          robots[IntegerOffset(robot.key.x - 1, robot.key.y)] =
-              Offset(screenWidth.roundToDouble() - 1, robot.value.dy);
+          robots[IntegerOffset(robot.key.x - 1, robot.key.y)] = Robot(
+              screenWidth.roundToDouble() - 1, robot.value.dy, robot.value.inv);
           robot = robots.entries.toList()[robots.keys.length - 1];
         }
         if (robot.value.dx >= screenWidth) {
           robots.remove(robot.key);
           robots[IntegerOffset(robot.key.x + 1, robot.key.y)] =
-              Offset(1, robot.value.dy);
+              Robot(1, robot.value.dy, robot.value.inv);
           robot = robots.entries.toList()[robots.keys.length - 1];
         }
         if (robot.value.dy <= 0) {
           robots.remove(robot.key);
-          robots[IntegerOffset(robot.key.x, robot.key.y - 1)] =
-              Offset(robot.value.dx, screenHeight.roundToDouble() - 1);
+          robots[IntegerOffset(robot.key.x, robot.key.y - 1)] = Robot(
+              robot.value.dx,
+              screenHeight.roundToDouble() - 1,
+              robot.value.inv);
           robot = robots.entries.toList()[robots.keys.length - 1];
         }
         if (robot.value.dy >= screenHeight) {
           robots.remove(robot.key);
           robots[IntegerOffset(robot.key.x, robot.key.y + 1)] =
-              Offset(robot.value.dx, 1);
+              Robot(robot.value.dx, 1, robot.value.inv);
         }
+
         //("Post-move ${robot.key.hashCode} pos ${robots[robot.key]}");
       }
     });
@@ -442,7 +477,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         (element) =>
                             element.key.x == roomX && element.key.y == roomY,
                       )
-                      .map((e) => e.value)) ...[
+                      .map((e) => Offset(e.value.dx, e.value.dy))) ...[
                     if (debugMode)
                       Positioned(
                         left: robot.dx * 10,
@@ -651,7 +686,15 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  final Map<IntegerOffset, Offset> robots = {};
+  final Map<IntegerOffset, Robot> robots = {};
+}
+
+class Robot {
+  final double dx;
+  final double dy;
+  final int inv;
+
+  Robot(this.dx, this.dy, [this.inv = 0]);
 }
 
 class IntegerOffset {
