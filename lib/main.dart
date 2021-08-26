@@ -75,40 +75,25 @@ class _MyHomePageState extends State<MyHomePage> {
   String get tutorial {
     if (won) return "You Won!";
     if (shopActive) {
-      if ((inv['furnace'] ?? 0) >= 1) {
+      if ((inv['wood.raw'] ?? 0) >= 100) {
         return "Win the game by buying the 'Win game' item";
       }
-      return "Remember to get a furnace before you go to the shop. (press Leave shop)";
+      return "Remember to get wood before you go to the shop. (press Leave shop)";
     }
 
     if (roomX == 1 && roomY == 1) {
-      if ((inv['furnace'] ?? 0) >= 1) {
+      if ((inv['wood.raw'] ?? 0) >= 100) {
         return "Go to the red square (the shop) and press x";
       }
     }
-    if ((inv['furnace'] ?? 0) >= 1) {
+    if ((inv['wood.raw'] ?? 0) >= 100) {
       if (tableOpen != null) return "Press the X button";
       if (roomX > 1) return "Go left (press a)";
       if (roomX < 1) return "Go right (press d)";
       if (roomY > 1) return "Go up (press w)";
       return "Go down (press s)";
     }
-    if ((tableOpen?.result ?? "none") == "furnace") {
-      return "Take your furnace (the new icon) by clicking on it.";
-    }
-    if ((inv['ore.just.stone'] ?? 0) < 2) {
-      return "Press v on the gray floor to get some grey stone.";
-    }
-    if (tableOpen != null) {
-      return "Set the top-left and bottom-right dropdowns to stone.";
-    }
-    if (woodPlaced) {
-      return "Press f on your placed wood to open it.";
-    }
-    if ((inv['wood.raw'] ?? 0) >= 1) {
-      return "Press q to place your wood.";
-    }
-    return "Walk over a wood log to get some wood.";
+    return 'TODO';
   }
 
   bool woodPlaced = false;
@@ -272,6 +257,18 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         }
         Room room = rooms[robot.key.x]![robot.key.y]!;
+        if (((robot.value.dx > playerX && robot.value.dx < playerX + 5) ||
+                (robot.value.dx + 3 > playerX &&
+                    robot.value.dx + 3 < playerX + 5)) &&
+            ((robot.value.dy + 3 > playerY &&
+                    robot.value.dy + 3 < playerY + 5) ||
+                (robot.value.dy > playerY && robot.value.dy < playerY + 5)) &&
+            roomX == robot.key.x &&
+            roomY == robot.key.y) {
+          inv['wood.raw'] = (inv['wood.raw'] ?? 0) + robot.value.inv;
+          robots[robot.key] = Robot(robot.value.dx, robot.value.dy, 0);
+          robot = MapEntry(robot.key, robots[robot.key]!);
+        }
 
         //("Pre-move ${robot.key.hashCode} pos ${robots[robot.key]} logpos ${room.logPos}");
         if (Offset(robot.value.dx, robot.value.dy) == room.logPos) {
@@ -284,9 +281,8 @@ class _MyHomePageState extends State<MyHomePage> {
           ]..shuffle(Random(room.logPos.dx.ceil())))
               .first;
         }
-        print(robot.value.inv);
-        if (robot.value.inv < 5) {
-          if (robot.value.dx > room.logPos.dx) {
+        void hone(x, y) {
+          if (robot.value.dx > x) {
             //("L.${robot.key.hashCode} pos ${robots[robot.key]}");
             robots[robot.key] =
                 Robot(robot.value.dx - .5, robot.value.dy, robot.value.inv);
@@ -294,7 +290,7 @@ class _MyHomePageState extends State<MyHomePage> {
             robot = robots.entries
                 .toList()[robots.keys.toList().indexOf(robot.key)];
           }
-          if (robot.value.dx < room.logPos.dx) {
+          if (robot.value.dx < x) {
             //("R.${robot.key.hashCode} pos ${robots[robot.key]}");
             robots[robot.key] =
                 Robot(robot.value.dx + .5, robot.value.dy, robot.value.inv);
@@ -302,7 +298,7 @@ class _MyHomePageState extends State<MyHomePage> {
             robot = robots.entries
                 .toList()[robots.keys.toList().indexOf(robot.key)];
           }
-          if (robot.value.dy > room.logPos.dy) {
+          if (robot.value.dy > y) {
             //("U.${robot.key.hashCode} pos ${robots[robot.key]}");
             robots[robot.key] =
                 Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
@@ -310,7 +306,7 @@ class _MyHomePageState extends State<MyHomePage> {
             robot = robots.entries
                 .toList()[robots.keys.toList().indexOf(robot.key)];
           }
-          if (robot.value.dy < room.logPos.dy) {
+          if (robot.value.dy < y) {
             //("D.${robot.key.hashCode} pos ${robots[robot.key]}");
             robots[robot.key] =
                 Robot(robot.value.dx, robot.value.dy + .5, robot.value.inv);
@@ -318,6 +314,10 @@ class _MyHomePageState extends State<MyHomePage> {
             robot = robots.entries
                 .toList()[robots.keys.toList().indexOf(robot.key)];
           }
+        }
+
+        if (robot.value.inv < 5) {
+          hone(room.logPos.dx, room.logPos.dy);
         } else {
           if (robot.key.x > roomX) {
             robots[robot.key] =
@@ -342,6 +342,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
             robot = robots.entries
                 .toList()[robots.keys.toList().indexOf(robot.key)];
+          }
+          if (roomX == robot.key.x && roomY == robot.key.y) {
+            hone(screenWidth / 2, screenHeight / 2);
           }
         }
         if (robot.value.dx <= 0) {
@@ -549,14 +552,14 @@ class _MyHomePageState extends State<MyHomePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             ShopItem(
-                              1,
+                              100,
                               () {
                                 won = true;
                               },
                               "Win game",
-                              (inv["furnace"] ?? 0),
-                              (g) => inv["furnace"] = g,
-                              goldKey: "furnace",
+                              (inv["wood.raw"] ?? 0),
+                              (g) => inv["wood.raw"] = g,
+                              goldKey: "wood.raw",
                             ),
                             TextButton(
                                 onPressed: () => shopActive = false,
