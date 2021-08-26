@@ -93,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (roomY > 1) return "Go up (press w)";
       return "Go down (press s)";
     }
-    return 'TODO';
+    return '//TODO(tree): add more tutorial';
   }
 
   bool woodPlaced = false;
