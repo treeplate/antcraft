@@ -1,0 +1,350 @@
+import 'dart:async';
+import 'dart:math';
+import 'dart:ui';
+
+class World {
+  double screenWidth = 10;
+  double screenHeight = 10;
+  final Map<int, Map<int, Room>> rooms = {};
+  Table? tableOpen;
+  final List<String> ores = ["ore.raw.iron"];
+  final Map<IntegerOffset, Robot> robots = {};
+  int roomX = 0;
+  int roomY = 0;
+  Map<String, int> inv = {};
+  bool recentMined = false;
+  int playerX = 0;
+  int playerY = 0;
+  int xVel = 0;
+  int yVel = 0;
+  int cooldown = 2;
+  bool shopActive = false;
+  bool invActive = false;
+  void left() {
+    xVel--;
+  }
+
+  void up() {
+    yVel--;
+  }
+
+  void down() {
+    yVel++;
+  }
+
+  void right() {
+    xVel++;
+  }
+
+  void mine(VoidCallback callback) {
+    if (!recentMined) {
+      recentMined = true;
+      if (playerX > room.orePos.dx &&
+          playerY > room.orePos.dy &&
+          playerX < room.orePos.dx + 30 &&
+          playerY < room.orePos.dy + 30 &&
+          room.ore != "none") {
+        inv[room.ore] = (inv[room.ore] ?? 0) + 1;
+      } else {
+        inv["ore.just.stone"] = (inv["ore.just.stone"] ?? 0) + 1;
+      }
+      callback();
+      Timer(
+        Duration(seconds: cooldown),
+        () => recentMined = false,
+      );
+    }
+  }
+
+  void placeTable() {
+    if ((inv['wood.raw'] ?? 0) > 0) {
+      inv['wood.raw'] = inv['wood.raw']! - 1;
+      room.tables[Offset(playerX / 1, playerY / 1)] = Table();
+    }
+  }
+
+  void openTable() {
+    for (MapEntry<Offset, Table> table in room.tables.entries) {
+      Offset logPos = table.key;
+      if (((logPos.dx > playerX && logPos.dx < playerX + 5) ||
+              (logPos.dx + 3 > playerX && logPos.dx + 3 < playerX + 5)) &&
+          ((logPos.dy + 3 > playerY && logPos.dy + 3 < playerY + 5) ||
+              (logPos.dy > playerY && logPos.dy < playerY + 5))) {
+        tableOpen = table.value;
+      }
+    }
+  }
+
+  void placeRobot() {
+    if ((inv['robot'] ?? 0) > 0) {
+      inv['robot'] = inv['robot']! - 1;
+      robots[IntegerOffset(roomX, roomY)] = Robot(playerX / 1, playerY / 1);
+    }
+  }
+
+  void openShop() {
+    if (playerX > screenWidth / 2 - 7.5 &&
+        playerY > screenHeight / 2 - 7.5 &&
+        playerX < (15 + screenWidth / 2) - 7.5 &&
+        playerY < (screenHeight / 2 + 15) - 7.5 &&
+        roomX == 1 &&
+        roomY == 1) {
+      shopActive = true;
+    }
+  }
+
+  void openInventory() {
+    invActive = !invActive;
+  }
+
+  void tick() {
+    playerX += xVel;
+    playerY += yVel;
+    if (playerX <= 0) {
+      roomX--;
+      playerX = (screenWidth - 6).round();
+    }
+    if (playerX >= (screenWidth - 5).round()) {
+      roomX++;
+      playerX = 1;
+    }
+    if (playerY <= 0) {
+      roomY--;
+      playerY = (screenHeight - 6).round();
+    }
+    if (playerY >= (screenHeight - 5).round()) {
+      roomY++;
+      playerY = 1;
+    }
+    if (((room.logPos.dx > playerX && room.logPos.dx < playerX + 5) ||
+            (room.logPos.dx + 3 > playerX &&
+                room.logPos.dx + 3 < playerX + 5)) &&
+        ((room.logPos.dy + 3 > playerY && room.logPos.dy + 3 < playerY + 5) ||
+            (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
+      room.logPos = ([const Offset(-30, -30), Offset(-30, screenHeight + 30)]
+            ..shuffle(Random(room.logPos.dx.ceil())))
+          .first;
+
+      inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
+    }
+    for (MapEntry<IntegerOffset, Robot> robot in robots.entries.toList()) {
+      if (rooms[robot.key.x] == null) {
+        rooms[robot.key.x] = {};
+      }
+      if (rooms[robot.key.x]![robot.key.y] == null) {
+        rooms[robot.key.x]![robot.key.y] = Room(
+          Offset(
+            (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
+            (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
+          ),
+          {},
+          (ores..shuffle()).first,
+          robot.key.x == 1 && robot.key.y == 1,
+          Offset(
+            (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
+            (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
+          ),
+        );
+      }
+      Room room = rooms[robot.key.x]![robot.key.y]!;
+      if (((robot.value.dx > playerX && robot.value.dx < playerX + 5) ||
+              (robot.value.dx + 3 > playerX &&
+                  robot.value.dx + 3 < playerX + 5)) &&
+          ((robot.value.dy + 3 > playerY && robot.value.dy + 3 < playerY + 5) ||
+              (robot.value.dy > playerY && robot.value.dy < playerY + 5)) &&
+          roomX == robot.key.x &&
+          roomY == robot.key.y) {
+        inv['wood.raw'] = (inv['wood.raw'] ?? 0) + robot.value.inv;
+        robots[robot.key] = Robot(robot.value.dx, robot.value.dy, 0);
+        robot = MapEntry(robot.key, robots[robot.key]!);
+      }
+
+      //("Pre-move ${robot.key.hashCode} pos ${robots[robot.key]} logpos ${room.logPos}");
+      if (Offset(robot.value.dx, robot.value.dy) == room.logPos) {
+        robots[robot.key] =
+            Robot(robot.value.dx, robot.value.dy, robot.value.inv + 1);
+        robot = MapEntry(robot.key, robots[robot.key]!);
+        room.logPos = ([const Offset(-30, -30), Offset(-30, screenHeight + 30)]
+              ..shuffle(Random(room.logPos.dx.ceil())))
+            .first;
+      }
+      void hone(x, y) {
+        if (robot.value.dx > x) {
+          //("L.${robot.key.hashCode} pos ${robots[robot.key]}");
+          robots[robot.key] =
+              Robot(robot.value.dx - .5, robot.value.dy, robot.value.inv);
+          //("L.${robot.key.hashCode} postpos ${robots[robot.key]}");
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+        }
+        if (robot.value.dx < x) {
+          //("R.${robot.key.hashCode} pos ${robots[robot.key]}");
+          robots[robot.key] =
+              Robot(robot.value.dx + .5, robot.value.dy, robot.value.inv);
+          //("R.${robot.key.hashCode} postpos ${robots[robot.key]}");
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+        }
+        if (robot.value.dy > y) {
+          //("U.${robot.key.hashCode} pos ${robots[robot.key]}");
+          robots[robot.key] =
+              Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
+          //("U.${robot.key.hashCode} postpos ${robots[robot.key]}");
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+        }
+        if (robot.value.dy < y) {
+          //("D.${robot.key.hashCode} pos ${robots[robot.key]}");
+          robots[robot.key] =
+              Robot(robot.value.dx, robot.value.dy + .5, robot.value.inv);
+          //("D.${robot.key.hashCode} postpos ${robots[robot.key]}");
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+        }
+      }
+
+      if (robot.value.inv < 5) {
+        hone(room.logPos.dx, room.logPos.dy);
+      } else {
+        if (robot.key.x > roomX) {
+          robots[robot.key] =
+              Robot(robot.value.dx - .5, robot.value.dy, robot.value.inv);
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+        }
+        if (robot.key.x < roomX) {
+          robots[robot.key] =
+              Robot(robot.value.dx + .5, robot.value.dy, robot.value.inv);
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+        }
+        if (robot.key.y < roomY) {
+          robots[robot.key] =
+              Robot(robot.value.dx, robot.value.dy + .5, robot.value.inv);
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+        }
+        if (robot.key.y > roomY) {
+          robots[robot.key] =
+              Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+        }
+        if (roomX == robot.key.x && roomY == robot.key.y) {
+          hone(screenWidth / 2, screenHeight / 2);
+        }
+      }
+      if (robot.value.dx <= 0) {
+        robots.remove(robot.key);
+        robots[IntegerOffset(robot.key.x - 1, robot.key.y)] = Robot(
+            screenWidth.roundToDouble() - 1, robot.value.dy, robot.value.inv);
+        robot = robots.entries.toList()[robots.keys.length - 1];
+      }
+      if (robot.value.dx >= screenWidth) {
+        robots.remove(robot.key);
+        robots[IntegerOffset(robot.key.x + 1, robot.key.y)] =
+            Robot(1, robot.value.dy, robot.value.inv);
+        robot = robots.entries.toList()[robots.keys.length - 1];
+      }
+      if (robot.value.dy <= 0) {
+        robots.remove(robot.key);
+        robots[IntegerOffset(robot.key.x, robot.key.y - 1)] = Robot(
+            robot.value.dx, screenHeight.roundToDouble() - 1, robot.value.inv);
+        robot = robots.entries.toList()[robots.keys.length - 1];
+      }
+      if (robot.value.dy >= screenHeight) {
+        robots.remove(robot.key);
+        robots[IntegerOffset(robot.key.x, robot.key.y + 1)] =
+            Robot(robot.value.dx, 1, robot.value.inv);
+      }
+
+      //("Post-move ${robot.key.hashCode} pos ${robots[robot.key]}");
+    }
+  }
+
+  void craft() {
+    if (tableOpen!.result != "none") {
+      inv[tableOpen!.result] = (inv[tableOpen!.result] ?? 0) + 1;
+      tableOpen!.grid = {
+        SlotKey.x0y0: "none",
+        SlotKey.x0y1: "none",
+        SlotKey.x1y0: "none",
+        SlotKey.x1y1: "none",
+      };
+    }
+  }
+
+  Room get room {
+    if (rooms[roomX] == null) {
+      rooms[roomX] = {};
+    }
+    if (rooms[roomX]![roomY] == null) {
+      rooms[roomX]![roomY] = Room(
+        Offset(
+          (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
+          (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
+        ),
+        {},
+        (ores..shuffle()).first,
+        playerX == 1 && playerY == 1,
+        Offset(
+          (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
+          (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
+        ),
+      );
+    }
+    return rooms[roomX]![roomY]!;
+  }
+}
+
+class Room {
+  Offset logPos;
+  final Map<Offset, Table> tables;
+  final String ore;
+  final Offset orePos;
+  final bool shop;
+
+  Room(this.logPos, this.tables, this.ore, this.shop, this.orePos);
+}
+
+enum SlotKey { x0y0, x0y1, x1y0, x1y1 }
+
+class Table {
+  Map<SlotKey, String> grid = {
+    SlotKey.x0y0: "none",
+    SlotKey.x0y1: "none",
+    SlotKey.x1y0: "none",
+    SlotKey.x1y1: "none",
+  };
+
+  String get result {
+    if (grid[SlotKey.x0y0] == "ore.just.stone" &&
+        grid[SlotKey.x1y0] == "none" &&
+        grid[SlotKey.x0y1] == "none" &&
+        grid[SlotKey.x1y1] == "ore.just.stone") {
+      return "furnace";
+    }
+    if (grid[SlotKey.x0y0] == "ore.raw.iron" &&
+        grid[SlotKey.x1y0] == "none" &&
+        grid[SlotKey.x0y1] == "none" &&
+        grid[SlotKey.x1y1] == "none") {
+      return "robot";
+    }
+    return "none";
+  }
+}
+
+class Robot {
+  final double dx;
+  final double dy;
+  final int inv;
+
+  Robot(this.dx, this.dy, [this.inv = 0]);
+}
+
+class IntegerOffset {
+  final int x;
+  final int y;
+
+  IntegerOffset(this.x, this.y);
+}

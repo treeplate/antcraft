@@ -1,0 +1,58 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:some_app/logic.dart';
+
+void main() {
+  testWidgets("Player can move", (WidgetTester tester) async {
+    World world = World();
+    world.tick();
+    expect(world.playerX, 4);
+    expect(world.playerY, 4);
+    expect(world.roomX, -1);
+    expect(world.roomY, -1);
+    world.tick();
+    expect(world.playerX, 4);
+    expect(world.playerY, 4);
+    world.left();
+    world.tick();
+    expect(world.playerX, 3);
+    expect(world.playerY, 4);
+    world.tick();
+    expect(world.playerX, 2);
+    expect(world.playerY, 4);
+    world.right();
+    world.tick();
+    expect(world.playerX, 2);
+    expect(world.playerY, 4);
+    world.right();
+    world.tick();
+    expect(world.playerX, 3);
+    expect(world.playerY, 4);
+    world.tick();
+    world.tick();
+    expect(world.playerX, 1);
+    expect(world.playerY, 4);
+    expect(world.roomX, 0);
+    expect(world.roomY, -1);
+    world.left();
+    world.down();
+    world.tick();
+    expect(world.playerX, 1);
+    expect(world.playerY, 1);
+    expect(world.roomX, 0);
+    expect(world.roomY, 0);
+    world.tick();
+    expect(world.playerX, 1);
+    expect(world.playerY, 2);
+    world.up();
+    world.tick();
+    expect(world.playerX, 1);
+    expect(world.playerY, 2);
+    world.up();
+    world.tick();
+    world.tick();
+    expect(world.playerX, 1);
+    expect(world.playerY, 4);
+    expect(world.roomX, 0);
+    expect(world.roomY, -1);
+  });
+}
