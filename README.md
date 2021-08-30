@@ -1,10 +1,12 @@
 # antcraft
 A 2D automation-based work-in-progress open-world game.
 ## Current game
-- A shop for upgrades that uses iron and gold.
-- Iron and gold mines you can get iron and gold from, respectively
+- A shop to win the game with 100 wood.
+- Iron mines you can get iron from
 - Floor made out of stone you can mine
 - Infinite-sized inventory
+- Wood you can pick up and place and use to craft robots
+- Robots to pick wood up for you
 ## TODO: (in order)
 - https://github.com/treeplate/antcraft/projects/1?add_cards_query=is%3Aopen
 ## Naming
