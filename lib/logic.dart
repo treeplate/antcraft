@@ -3,15 +3,22 @@ import 'dart:math';
 import 'dart:ui';
 
 class World {
+  World(this.random);
   double screenWidth = 10;
   double screenHeight = 10;
-  final Map<int, Map<int, Room>> rooms = {};
-  Table? tableOpen;
+  final Map<int, Map<int, Room>> _rooms = {};
+  Map<int, Map<int, Room>> get rooms => _rooms.map((key, value) =>
+      MapEntry(key, value.map((key, value) => MapEntry(key, value))));
+  Table? _tableOpen;
+  Table? get tableOpen => _tableOpen?.toTable();
   final List<String> ores = ["ore.raw.iron"];
-  final Map<IntegerOffset, Robot> robots = {};
+  final Map<IntegerOffset, Robot> _robots = {};
+  Map<IntegerOffset, Robot> get robots =>
+      _robots.map((key, value) => MapEntry(key, value));
   int roomX = 0;
   int roomY = 0;
-  Map<String, int> inv = {};
+  final Map<String, int> _inv = {};
+  Map<String, int> get inv => _inv.map((key, value) => MapEntry(key, value));
   bool recentMined = false;
   int playerX = 0;
   int playerY = 0;
@@ -20,6 +27,7 @@ class World {
   int cooldown = 2;
   bool shopActive = false;
   bool invActive = false;
+  final Random random;
   void left() {
     xVel--;
   }
@@ -44,21 +52,21 @@ class World {
           playerX < room.orePos.dx + 30 &&
           playerY < room.orePos.dy + 30 &&
           room.ore != "none") {
-        inv[room.ore] = (inv[room.ore] ?? 0) + 1;
+        _inv[room.ore] = (_inv[room.ore] ?? 0) + 1;
       } else {
-        inv["ore.just.stone"] = (inv["ore.just.stone"] ?? 0) + 1;
+        _inv["ore.just.stone"] = (_inv["ore.just.stone"] ?? 0) + 1;
       }
       callback();
       Timer(
         Duration(seconds: cooldown),
         () => recentMined = false,
       );
-    }
+    } else throw "TEST";
   }
 
   void placeTable() {
-    if ((inv['wood.raw'] ?? 0) > 0) {
-      inv['wood.raw'] = inv['wood.raw']! - 1;
+    if ((_inv['wood.raw'] ?? 0) > 0) {
+      _inv['wood.raw'] = _inv['wood.raw']! - 1;
       room.tables[Offset(playerX / 1, playerY / 1)] = Table();
     }
   }
@@ -70,15 +78,15 @@ class World {
               (logPos.dx + 3 > playerX && logPos.dx + 3 < playerX + 5)) &&
           ((logPos.dy + 3 > playerY && logPos.dy + 3 < playerY + 5) ||
               (logPos.dy > playerY && logPos.dy < playerY + 5))) {
-        tableOpen = table.value;
+        _tableOpen = table.value;
       }
     }
   }
 
   void placeRobot() {
-    if ((inv['robot'] ?? 0) > 0) {
-      inv['robot'] = inv['robot']! - 1;
-      robots[IntegerOffset(roomX, roomY)] = Robot(playerX / 1, playerY / 1);
+    if ((_inv['robot'] ?? 0) > 0) {
+      _inv['robot'] = _inv['robot']! - 1;
+      _robots[IntegerOffset(roomX, roomY)] = Robot(playerX / 1, playerY / 1);
     }
   }
 
@@ -123,28 +131,28 @@ class World {
             (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
       room.logPos = const Offset(-30, -30);
 
-      inv['wood.raw'] = (inv['wood.raw'] ?? 0) + 1;
+      _inv['wood.raw'] = (_inv['wood.raw'] ?? 0) + 1;
     }
-    for (MapEntry<IntegerOffset, Robot> robot in robots.entries.toList()) {
-      if (rooms[robot.key.x] == null) {
-        rooms[robot.key.x] = {};
+    for (MapEntry<IntegerOffset, Robot> robot in _robots.entries.toList()) {
+      if (_rooms[robot.key.x] == null) {
+        _rooms[robot.key.x] = {};
       }
-      if (rooms[robot.key.x]![robot.key.y] == null) {
-        rooms[robot.key.x]![robot.key.y] = Room(
+      if (_rooms[robot.key.x]![robot.key.y] == null) {
+        _rooms[robot.key.x]![robot.key.y] = Room(
           Offset(
-            (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
-            (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
+            (random.nextDouble() * (screenWidth - 15)).roundToDouble(),
+            (random.nextDouble() * (screenHeight - 15)).roundToDouble(),
           ),
           {},
           (ores..shuffle()).first,
           robot.key.x == 1 && robot.key.y == 1,
           Offset(
-            (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
-            (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
+            (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
+            (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
           ),
         );
       }
-      Room room = rooms[robot.key.x]![robot.key.y]!;
+      Room room = _rooms[robot.key.x]![robot.key.y]!;
       if (((robot.value.dx > playerX && robot.value.dx < playerX + 5) ||
               (robot.value.dx + 3 > playerX &&
                   robot.value.dx + 3 < playerX + 5)) &&
@@ -152,52 +160,52 @@ class World {
               (robot.value.dy > playerY && robot.value.dy < playerY + 5)) &&
           roomX == robot.key.x &&
           roomY == robot.key.y) {
-        inv['wood.raw'] = (inv['wood.raw'] ?? 0) + robot.value.inv;
-        robots[robot.key] = Robot(robot.value.dx, robot.value.dy, 0);
-        robot = MapEntry(robot.key, robots[robot.key]!);
+        _inv['wood.raw'] = (_inv['wood.raw'] ?? 0) + robot.value.inv;
+        _robots[robot.key] = Robot(robot.value.dx, robot.value.dy, 0);
+        robot = MapEntry(robot.key, _robots[robot.key]!);
       }
 
-      //("Pre-move ${robot.key.hashCode} pos ${robots[robot.key]} logpos ${room.logPos}");
+      //("Pre-move ${robot.key.hashCode} pos ${_robots[robot.key]} logpos ${room.logPos}");
       if (Offset(robot.value.dx, robot.value.dy) == room.logPos) {
-        robots[robot.key] =
+        _robots[robot.key] =
             Robot(robot.value.dx, robot.value.dy, robot.value.inv + 1);
-        robot = MapEntry(robot.key, robots[robot.key]!);
+        robot = MapEntry(robot.key, _robots[robot.key]!);
         room.logPos = ([const Offset(-30, -30), Offset(-30, screenHeight + 30)]
               ..shuffle(Random(room.logPos.dx.ceil())))
             .first;
       }
       void hone(x, y) {
         if (robot.value.dx > x) {
-          //("L.${robot.key.hashCode} pos ${robots[robot.key]}");
-          robots[robot.key] =
+          //("L.${robot.key.hashCode} pos ${_robots[robot.key]}");
+          _robots[robot.key] =
               Robot(robot.value.dx - .5, robot.value.dy, robot.value.inv);
-          //("L.${robot.key.hashCode} postpos ${robots[robot.key]}");
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+          //("L.${robot.key.hashCode} postpos ${_robots[robot.key]}");
+          robot = _robots.entries
+              .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dx < x) {
-          //("R.${robot.key.hashCode} pos ${robots[robot.key]}");
-          robots[robot.key] =
+          //("R.${robot.key.hashCode} pos ${_robots[robot.key]}");
+          _robots[robot.key] =
               Robot(robot.value.dx + .5, robot.value.dy, robot.value.inv);
-          //("R.${robot.key.hashCode} postpos ${robots[robot.key]}");
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+          //("R.${robot.key.hashCode} postpos ${_robots[robot.key]}");
+          robot = _robots.entries
+              .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dy > y) {
-          //("U.${robot.key.hashCode} pos ${robots[robot.key]}");
-          robots[robot.key] =
+          //("U.${robot.key.hashCode} pos ${_robots[robot.key]}");
+          _robots[robot.key] =
               Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
-          //("U.${robot.key.hashCode} postpos ${robots[robot.key]}");
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+          //("U.${robot.key.hashCode} postpos ${_robots[robot.key]}");
+          robot = _robots.entries
+              .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dy < y) {
-          //("D.${robot.key.hashCode} pos ${robots[robot.key]}");
-          robots[robot.key] =
+          //("D.${robot.key.hashCode} pos ${_robots[robot.key]}");
+          _robots[robot.key] =
               Robot(robot.value.dx, robot.value.dy + .5, robot.value.inv);
-          //("D.${robot.key.hashCode} postpos ${robots[robot.key]}");
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+          //("D.${robot.key.hashCode} postpos ${_robots[robot.key]}");
+          robot = _robots.entries
+              .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
       }
 
@@ -205,65 +213,65 @@ class World {
         hone(room.logPos.dx, room.logPos.dy);
       } else {
         if (robot.key.x > roomX) {
-          robots[robot.key] =
+          _robots[robot.key] =
               Robot(robot.value.dx - .5, robot.value.dy, robot.value.inv);
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+          robot = _robots.entries
+              .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.key.x < roomX) {
-          robots[robot.key] =
+          _robots[robot.key] =
               Robot(robot.value.dx + .5, robot.value.dy, robot.value.inv);
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+          robot = _robots.entries
+              .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.key.y < roomY) {
-          robots[robot.key] =
+          _robots[robot.key] =
               Robot(robot.value.dx, robot.value.dy + .5, robot.value.inv);
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+          robot = _robots.entries
+              .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.key.y > roomY) {
-          robots[robot.key] =
+          _robots[robot.key] =
               Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
-          robot =
-              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
+          robot = _robots.entries
+              .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (roomX == robot.key.x && roomY == robot.key.y) {
           hone(screenWidth / 2, screenHeight / 2);
         }
       }
       if (robot.value.dx <= 0) {
-        robots.remove(robot.key);
-        robots[IntegerOffset(robot.key.x - 1, robot.key.y)] = Robot(
+        _robots.remove(robot.key);
+        _robots[IntegerOffset(robot.key.x - 1, robot.key.y)] = Robot(
             screenWidth.roundToDouble() - 1, robot.value.dy, robot.value.inv);
-        robot = robots.entries.toList()[robots.keys.length - 1];
+        robot = _robots.entries.toList()[_robots.keys.length - 1];
       }
       if (robot.value.dx >= screenWidth) {
-        robots.remove(robot.key);
-        robots[IntegerOffset(robot.key.x + 1, robot.key.y)] =
+        _robots.remove(robot.key);
+        _robots[IntegerOffset(robot.key.x + 1, robot.key.y)] =
             Robot(1, robot.value.dy, robot.value.inv);
-        robot = robots.entries.toList()[robots.keys.length - 1];
+        robot = _robots.entries.toList()[_robots.keys.length - 1];
       }
       if (robot.value.dy <= 0) {
-        robots.remove(robot.key);
-        robots[IntegerOffset(robot.key.x, robot.key.y - 1)] = Robot(
+        _robots.remove(robot.key);
+        _robots[IntegerOffset(robot.key.x, robot.key.y - 1)] = Robot(
             robot.value.dx, screenHeight.roundToDouble() - 1, robot.value.inv);
-        robot = robots.entries.toList()[robots.keys.length - 1];
+        robot = _robots.entries.toList()[_robots.keys.length - 1];
       }
       if (robot.value.dy >= screenHeight) {
-        robots.remove(robot.key);
-        robots[IntegerOffset(robot.key.x, robot.key.y + 1)] =
+        _robots.remove(robot.key);
+        _robots[IntegerOffset(robot.key.x, robot.key.y + 1)] =
             Robot(robot.value.dx, 1, robot.value.inv);
       }
 
-      //("Post-move ${robot.key.hashCode} pos ${robots[robot.key]}");
+      //("Post-move ${robot.key.hashCode} pos ${_robots[robot.key]}");
     }
   }
 
   void craft() {
-    if (tableOpen!.result != "none") {
-      inv[tableOpen!.result] = (inv[tableOpen!.result] ?? 0) + 1;
-      tableOpen!.grid = {
+    if (_tableOpen!.result != "none") {
+      _inv[_tableOpen!.result] = (_inv[_tableOpen!.result] ?? 0) + 1;
+      _tableOpen!.grid = {
         SlotKey.x0y0: "none",
         SlotKey.x0y1: "none",
         SlotKey.x1y0: "none",
@@ -272,26 +280,43 @@ class World {
     }
   }
 
-  Room get room {
-    if (rooms[roomX] == null) {
-      rooms[roomX] = {};
+  void setCraftCorner(SlotKey slotKey, String value) {
+    if (value == "none" || (_inv[value] ?? 0) > 0) {
+      if (_tableOpen!.grid[slotKey] != "none") {
+        _inv[_tableOpen!.grid[slotKey]!] = _inv[_tableOpen!.grid[slotKey]!]! + 1;
+      }
+
+      if (value != "none") {
+        _inv[value] = _inv[value]! - 1;
+      }
+      _tableOpen!.grid[slotKey] = value;
     }
-    if (rooms[roomX]![roomY] == null) {
-      rooms[roomX]![roomY] = Room(
+  }
+
+  Room get room {
+    if (_rooms[roomX] == null) {
+      _rooms[roomX] = {};
+    }
+    if (_rooms[roomX]![roomY] == null) {
+      _rooms[roomX]![roomY] = Room(
         Offset(
-          (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
-          (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
+          (random.nextDouble() * (screenWidth - 15)).roundToDouble(),
+          (random.nextDouble() * (screenHeight - 15)).roundToDouble(),
         ),
         {},
         (ores..shuffle()).first,
         playerX == 1 && playerY == 1,
         Offset(
-          (Random().nextDouble() * (screenWidth - 15)).roundToDouble(),
-          (Random().nextDouble() * (screenHeight - 15)).roundToDouble(),
+          (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
+          (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
         ),
       );
     }
-    return rooms[roomX]![roomY]!;
+    return _rooms[roomX]![roomY]!;
+  }
+
+  void closeTable() {
+    _tableOpen = null;
   }
 }
 
@@ -330,6 +355,9 @@ class Table {
     }
     return "none";
   }
+
+  Table toTable() =>
+      Table()..grid = grid.map((key, value) => MapEntry(key, value));
 }
 
 class Robot {

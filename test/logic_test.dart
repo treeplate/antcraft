@@ -1,9 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:some_app/logic.dart';
 
 void main() {
   testWidgets("Player can move", (WidgetTester tester) async {
-    World world = World();
+    World world = World(MockRandom());
     world.tick();
     expect(world.playerX, 4);
     expect(world.playerY, 4);
@@ -55,4 +57,73 @@ void main() {
     expect(world.roomX, 0);
     expect(world.roomY, -1);
   });
+  testWidgets("Wood collection/placement", (widgetTester) async {
+    World world = World(MockRandom());
+    expect(world.inv['wood.raw'], isNull);
+    world.tick();
+    world.left();
+    world.up();
+    world.tick();
+    world.tick();
+    world.right();
+    world.down();
+    expect(world.inv['wood.raw'], 1);
+    expect(world.tableOpen, isNull);
+    expect(world.room.tables, isEmpty);
+    world.openTable();
+    expect(world.tableOpen, isNull);
+    world.placeTable();
+    expect(world.room.tables, hasLength(1));
+    expect(world.tableOpen, isNull);
+    world.openTable();
+    expect(world.tableOpen, isNotNull);
+  });
+  testWidgets("Mining iron", (WidgetTester tester) async {
+    World world = World(MockRandom());
+    expect(world.inv['ore.raw.iron'], isNull);
+    bool mined = false;
+    world.mine(() {
+      mined = true;
+    });
+    await tester.pump(const Duration(seconds: 2));
+    expect(mined, true);
+    expect(world.inv['ore.raw.stone'], isNull);
+    expect(world.inv['ore.raw.iron'], 1);
+  });
+  testWidgets("Robot collection/placement", (WidgetTester tester) async {
+    World world = World(MockRandom());
+    expect(world.inv['robot'], isNull);
+    world.tick();
+    world.left();
+    world.up();
+    world.tick();
+    world.tick();
+    world.right();
+    world.down();
+    world.placeTable();
+    world.openTable();
+    world.mine(() {});
+    await tester.pump(const Duration(seconds: 2));
+    expect(world.tableOpen!.result, 'none');
+    world.setCraftCorner(SlotKey.x0y0, 'ore.raw.iron');
+    expect(world.tableOpen!.result, 'robot');
+  });
+}
+
+class MockRandom implements Random {
+  @override
+  bool nextBool() {
+    throw UnimplementedError();
+  }
+
+  @override
+  double nextDouble() {
+    return 0;
+  }
+
+  @override
+  int nextInt(int max) {
+    throw UnimplementedError();
+  }
+
 }

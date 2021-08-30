@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Table;
@@ -39,7 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool w = false;
   bool s = false;
 
-  World world = World();
+  late final World world = World(Random());
 
   Room get room {
     return world.room;
@@ -353,11 +354,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                   inv: world.inv,
                                   slotKey: SlotKey.x0y0,
                                   table: world.tableOpen!,
+                                  world: world,
                                 ),
                                 TableSlotDropdown(
                                   inv: world.inv,
                                   slotKey: SlotKey.x0y1,
                                   table: world.tableOpen!,
+                                  world: world,
                                 ),
                               ],
                             ),
@@ -369,11 +372,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                   inv: world.inv,
                                   slotKey: SlotKey.x1y0,
                                   table: world.tableOpen!,
+                                  world: world,
                                 ),
                                 TableSlotDropdown(
                                   inv: world.inv,
                                   slotKey: SlotKey.x1y1,
                                   table: world.tableOpen!,
+                                  world: world,
                                 ),
                               ],
                             ),
@@ -382,7 +387,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 TextButton(
-                                  onPressed: () => world.tableOpen = null,
+                                  onPressed: () => world.closeTable(),
                                   child: const Text("X"),
                                 ),
                                 TextButton(
@@ -484,11 +489,13 @@ class TableSlotDropdown extends StatefulWidget {
     required this.inv,
     required this.slotKey,
     required this.table,
+    required this.world,
   }) : super(key: key);
 
   final Map<String, int> inv;
   final SlotKey slotKey;
   final Table table;
+  final World world;
   @override
   _TableSlotDropdownState createState() => _TableSlotDropdownState();
 }
@@ -501,17 +508,7 @@ class _TableSlotDropdownState extends State<TableSlotDropdown> {
       value: widget.table.grid[widget.slotKey]!,
       onChanged: (String? value) {
         setState(() {
-          if (value == "none" || widget.inv[value]! > 0) {
-            if (widget.table.grid[widget.slotKey] != "none") {
-              widget.inv[widget.table.grid[widget.slotKey]!] =
-                  widget.inv[widget.table.grid[widget.slotKey]!]! + 1;
-            }
-
-            if (value! != "none") {
-              widget.inv[value] = widget.inv[value]! - 1;
-            }
-            widget.table.grid[widget.slotKey] = value;
-          }
+          widget.world.setCraftCorner(widget.slotKey, value!);
         });
       },
     );
