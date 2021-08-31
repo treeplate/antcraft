@@ -127,7 +127,7 @@ class ItemRenderer extends StatelessWidget {
       return FurnaceRenderer(
         width: width,
         height: height,
-        placed: "ore.raw.iron",
+        placed: 'ore.raw.iron',
       );
     }
     if (item == "robot") {

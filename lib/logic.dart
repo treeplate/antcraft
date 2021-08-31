@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
+const String stone = 'ore.just.stone';
+const String iron = 'ore.raw.iron';
+
 class World {
   World(this.random);
   double screenWidth = 10;
@@ -11,7 +14,7 @@ class World {
       MapEntry(key, value.map((key, value) => MapEntry(key, value))));
   Table? _tableOpen;
   Table? get tableOpen => _tableOpen?.toTable();
-  final List<String> ores = ["ore.raw.iron"];
+  final List<String> ores = [iron];
   final Map<IntegerOffset, Robot> _robots = {};
   Map<IntegerOffset, Robot> get robots =>
       _robots.map((key, value) => MapEntry(key, value));
@@ -54,14 +57,14 @@ class World {
           room.ore != "none") {
         _inv[room.ore] = (_inv[room.ore] ?? 0) + 1;
       } else {
-        _inv["ore.just.stone"] = (_inv["ore.just.stone"] ?? 0) + 1;
+        _inv[stone] = (_inv[stone] ?? 0) + 1;
       }
       callback();
       Timer(
         Duration(seconds: cooldown),
         () => recentMined = false,
       );
-    } else throw "TEST";
+    }
   }
 
   void placeTable() {
@@ -283,7 +286,8 @@ class World {
   void setCraftCorner(SlotKey slotKey, String value) {
     if (value == "none" || (_inv[value] ?? 0) > 0) {
       if (_tableOpen!.grid[slotKey] != "none") {
-        _inv[_tableOpen!.grid[slotKey]!] = _inv[_tableOpen!.grid[slotKey]!]! + 1;
+        _inv[_tableOpen!.grid[slotKey]!] =
+            _inv[_tableOpen!.grid[slotKey]!]! + 1;
       }
 
       if (value != "none") {
@@ -341,13 +345,13 @@ class Table {
   };
 
   String get result {
-    if (grid[SlotKey.x0y0] == "ore.just.stone" &&
+    if (grid[SlotKey.x0y0] == stone &&
         grid[SlotKey.x1y0] == "none" &&
         grid[SlotKey.x0y1] == "none" &&
-        grid[SlotKey.x1y1] == "ore.just.stone") {
+        grid[SlotKey.x1y1] == stone) {
       return "furnace";
     }
-    if (grid[SlotKey.x0y0] == "ore.raw.iron" &&
+    if (grid[SlotKey.x0y0] == iron &&
         grid[SlotKey.x1y0] == "none" &&
         grid[SlotKey.x0y1] == "none" &&
         grid[SlotKey.x1y1] == "none") {

@@ -80,18 +80,20 @@ void main() {
   });
   testWidgets("Mining iron", (WidgetTester tester) async {
     World world = World(MockRandom());
-    expect(world.inv['ore.raw.iron'], isNull);
+    world.tick();
+    expect(world.inv[iron], isNull);
     bool mined = false;
     world.mine(() {
       mined = true;
     });
     await tester.pump(const Duration(seconds: 2));
     expect(mined, true);
-    expect(world.inv['ore.raw.stone'], isNull);
-    expect(world.inv['ore.raw.iron'], 1);
+    expect(world.inv[stone], isNull);
+    expect(world.inv[iron], 1);
   });
   testWidgets("Robot collection/placement", (WidgetTester tester) async {
     World world = World(MockRandom());
+    expect(world.robots, isEmpty);
     expect(world.inv['robot'], isNull);
     world.tick();
     world.left();
@@ -105,8 +107,12 @@ void main() {
     world.mine(() {});
     await tester.pump(const Duration(seconds: 2));
     expect(world.tableOpen!.result, 'none');
-    world.setCraftCorner(SlotKey.x0y0, 'ore.raw.iron');
+    world.setCraftCorner(SlotKey.x0y0, iron);
     expect(world.tableOpen!.result, 'robot');
+    world.craft();
+    expect(world.inv['robot'], 1);
+    world.placeRobot();
+    expect(world.robots, hasLength(1));
   });
 }
 
@@ -125,5 +131,4 @@ class MockRandom implements Random {
   int nextInt(int max) {
     throw UnimplementedError();
   }
-
 }
