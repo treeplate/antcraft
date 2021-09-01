@@ -173,9 +173,7 @@ class World {
         _robots[robot.key] =
             Robot(robot.value.dx, robot.value.dy, robot.value.inv + 1);
         robot = MapEntry(robot.key, _robots[robot.key]!);
-        room.logPos = ([const Offset(-30, -30), Offset(-30, screenHeight + 30)]
-              ..shuffle(Random(room.logPos.dx.ceil())))
-            .first;
+        room.logPos = const Offset(-30, -30);
       }
       void hone(x, y) {
         if (robot.value.dx > x) {
@@ -240,7 +238,10 @@ class World {
               .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (roomX == robot.key.x && roomY == robot.key.y) {
-          hone(screenWidth / 2, screenHeight / 2);
+          hone(
+            random.nextDouble() * screenWidth,
+            random.nextDouble() * screenHeight,
+          );
         }
       }
       if (robot.value.dx <= 0) {
@@ -309,7 +310,7 @@ class World {
         ),
         {},
         (ores..shuffle()).first,
-        playerX == 1 && playerY == 1,
+        roomX == 1 && roomY == 1,
         Offset(
           (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
           (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
