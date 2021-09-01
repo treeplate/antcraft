@@ -114,6 +114,30 @@ void main() {
     world.placeRobot();
     expect(world.robots, hasLength(1));
   });
+  testWidgets("Robot movement/gathering", (WidgetTester tester) async {
+    World world = World(MockRandom());
+    world.tick();
+    world.left();
+    world.up();
+    world.tick();
+    world.tick();
+    world.right();
+    world.down();
+    world.placeTable();
+    world.openTable();
+    world.mine(() {});
+    await tester.pump(const Duration(seconds: 2));
+    world.setCraftCorner(SlotKey.x0y0, iron);
+    world.craft();
+    world.placeRobot();
+    IntegerOffset robot = world.robots.keys.single;
+    Robot roombot = world.robots.values.single;
+    expect(robot.x, world.roomX);
+    expect(robot.y, world.roomY);
+    expect(roombot.dx, world.playerX);
+    expect(roombot.dy, world.playerY);
+    expect(roombot.inv, 0);
+  });
 }
 
 class MockRandom implements Random {
