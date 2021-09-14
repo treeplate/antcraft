@@ -89,7 +89,14 @@ class World {
   void placeRobot() {
     if ((_inv['robot'] ?? 0) > 0) {
       _inv['robot'] = _inv['robot']! - 1;
-      _robots[IntegerOffset(roomX, roomY)] = Robot(playerX / 1, playerY / 1);
+      _robots[IntegerOffset(roomX, roomY)] = Robot(
+        playerX / 1,
+        playerY / 1,
+        Offset(
+          random.nextDouble() * screenWidth,
+          random.nextDouble() * screenHeight,
+        ),
+      );
     }
   }
 
@@ -164,48 +171,71 @@ class World {
           roomX == robot.key.x &&
           roomY == robot.key.y) {
         _inv['wood.raw'] = (_inv['wood.raw'] ?? 0) + robot.value.inv;
-        _robots[robot.key] = Robot(robot.value.dx, robot.value.dy, 0);
+        _robots[robot.key] = Robot(
+          robot.value.dx,
+          robot.value.dy,
+          robot.value.pos,
+          0,
+        );
         robot = MapEntry(robot.key, _robots[robot.key]!);
       }
 
       //("Pre-move ${robot.key.hashCode} pos ${_robots[robot.key]} logpos ${room.logPos}");
       if (Offset(robot.value.dx, robot.value.dy) == room.logPos) {
-        _robots[robot.key] =
-            Robot(robot.value.dx, robot.value.dy, robot.value.inv + 1);
+        _robots[robot.key] = Robot(
+          robot.value.dx,
+          robot.value.dy,
+          robot.value.pos,
+          robot.value.inv + 1,
+        );
         robot = MapEntry(robot.key, _robots[robot.key]!);
-        room.logPos = ([const Offset(-30, -30), Offset(-30, screenHeight + 30)]
-              ..shuffle(Random(room.logPos.dx.ceil())))
-            .first;
+        room.logPos = const Offset(-30, -30);
       }
       void hone(x, y) {
         if (robot.value.dx > x) {
           //("L.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] =
-              Robot(robot.value.dx - .5, robot.value.dy, robot.value.inv);
+          _robots[robot.key] = Robot(
+            robot.value.dx - .5,
+            robot.value.dy,
+            robot.value.pos,
+            robot.value.inv,
+          );
           //("L.${robot.key.hashCode} postpos ${_robots[robot.key]}");
           robot = _robots.entries
               .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dx < x) {
           //("R.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] =
-              Robot(robot.value.dx + .5, robot.value.dy, robot.value.inv);
+          _robots[robot.key] = Robot(
+            robot.value.dx + .5,
+            robot.value.dy,
+            robot.value.pos,
+            robot.value.inv,
+          );
           //("R.${robot.key.hashCode} postpos ${_robots[robot.key]}");
           robot = _robots.entries
               .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dy > y) {
           //("U.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] =
-              Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
+          _robots[robot.key] = Robot(
+            robot.value.dx,
+            robot.value.dy - .5,
+            robot.value.pos,
+            robot.value.inv,
+          );
           //("U.${robot.key.hashCode} postpos ${_robots[robot.key]}");
           robot = _robots.entries
               .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dy < y) {
           //("D.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] =
-              Robot(robot.value.dx, robot.value.dy + .5, robot.value.inv);
+          _robots[robot.key] = Robot(
+            robot.value.dx,
+            robot.value.dy + .5,
+            robot.value.pos,
+            robot.value.inv,
+          );
           //("D.${robot.key.hashCode} postpos ${_robots[robot.key]}");
           robot = _robots.entries
               .toList()[_robots.keys.toList().indexOf(robot.key)];
@@ -216,55 +246,90 @@ class World {
         hone(room.logPos.dx, room.logPos.dy);
       } else {
         if (robot.key.x > roomX) {
-          _robots[robot.key] =
-              Robot(robot.value.dx - .5, robot.value.dy, robot.value.inv);
+          _robots[robot.key] = Robot(
+            robot.value.dx - .5,
+            robot.value.dy,
+            robot.value.pos,
+            robot.value.inv,
+          );
           robot = _robots.entries
               .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.key.x < roomX) {
-          _robots[robot.key] =
-              Robot(robot.value.dx + .5, robot.value.dy, robot.value.inv);
+          _robots[robot.key] = Robot(
+            robot.value.dx + .5,
+            robot.value.dy,
+            robot.value.pos,
+            robot.value.inv,
+          );
           robot = _robots.entries
               .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.key.y < roomY) {
-          _robots[robot.key] =
-              Robot(robot.value.dx, robot.value.dy + .5, robot.value.inv);
+          _robots[robot.key] = Robot(
+            robot.value.dx,
+            robot.value.dy + .5,
+            robot.value.pos,
+            robot.value.inv,
+          );
           robot = _robots.entries
               .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.key.y > roomY) {
-          _robots[robot.key] =
-              Robot(robot.value.dx, robot.value.dy - .5, robot.value.inv);
+          _robots[robot.key] = Robot(
+            robot.value.dx,
+            robot.value.dy - .5,
+            robot.value.pos,
+            robot.value.inv,
+          );
           robot = _robots.entries
               .toList()[_robots.keys.toList().indexOf(robot.key)];
         }
         if (roomX == robot.key.x && roomY == robot.key.y) {
-          hone(screenWidth / 2, screenHeight / 2);
+          hone(
+            robot.value.pos.dx,
+            robot.value.pos.dy,
+          );
         }
       }
       if (robot.value.dx <= 0) {
         _robots.remove(robot.key);
         _robots[IntegerOffset(robot.key.x - 1, robot.key.y)] = Robot(
-            screenWidth.roundToDouble() - 1, robot.value.dy, robot.value.inv);
+          screenWidth.roundToDouble() - 1,
+          robot.value.dy,
+          robot.value.pos,
+          robot.value.inv,
+        );
         robot = _robots.entries.toList()[_robots.keys.length - 1];
       }
       if (robot.value.dx >= screenWidth) {
         _robots.remove(robot.key);
-        _robots[IntegerOffset(robot.key.x + 1, robot.key.y)] =
-            Robot(1, robot.value.dy, robot.value.inv);
+        _robots[IntegerOffset(robot.key.x + 1, robot.key.y)] = Robot(
+          1,
+          robot.value.dy,
+          robot.value.pos,
+          robot.value.inv,
+        );
         robot = _robots.entries.toList()[_robots.keys.length - 1];
       }
       if (robot.value.dy <= 0) {
         _robots.remove(robot.key);
         _robots[IntegerOffset(robot.key.x, robot.key.y - 1)] = Robot(
-            robot.value.dx, screenHeight.roundToDouble() - 1, robot.value.inv);
+          robot.value.dx,
+          screenHeight.roundToDouble() - 1,
+          robot.value.pos,
+          robot.value.inv,
+        );
         robot = _robots.entries.toList()[_robots.keys.length - 1];
       }
       if (robot.value.dy >= screenHeight) {
         _robots.remove(robot.key);
-        _robots[IntegerOffset(robot.key.x, robot.key.y + 1)] =
-            Robot(robot.value.dx, 1, robot.value.inv);
+        _robots[IntegerOffset(robot.key.x, robot.key.y + 1)] = Robot(
+          robot.value.dx,
+          1,
+          robot.value.pos,
+          robot.value.inv,
+        );
       }
 
       //("Post-move ${robot.key.hashCode} pos ${_robots[robot.key]}");
@@ -309,7 +374,7 @@ class World {
         ),
         {},
         (ores..shuffle()).first,
-        playerX == 1 && playerY == 1,
+        roomX == 1 && roomY == 1,
         Offset(
           (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
           (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
@@ -368,8 +433,9 @@ class Robot {
   final double dx;
   final double dy;
   final int inv;
+  final Offset pos;
 
-  Robot(this.dx, this.dy, [this.inv = 0]);
+  Robot(this.dx, this.dy, this.pos, [this.inv = 0]);
 }
 
 class IntegerOffset {

@@ -39,6 +39,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool a = false;
   bool w = false;
   bool s = false;
+  bool e = false;
 
   late final World world = World(Random());
 
@@ -117,6 +118,9 @@ class _MyHomePageState extends State<MyHomePage> {
       }
       return KeyEventResult.handled;
     }
+    if (event.logicalKey == LogicalKeyboardKey.keyE && event is RawKeyUpEvent) {
+      e = false;
+    }
     if (event.character == "v") {
       world.mine(() {
         mineFeedback = "+1";
@@ -138,9 +142,11 @@ class _MyHomePageState extends State<MyHomePage> {
     if (event.character == "f") {
       world.openTable();
     }
-    if (event.character == "e") {
+    if (event.character == "e" && e == false) {
+      e = true;
       world.openInventory();
     }
+
     return KeyEventResult.handled;
   }
 
