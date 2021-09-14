@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import 'images.dart';
 import 'logic.dart';
+import 'tutorialoverride.dart';
 
 const bool debugMode = false;
 void main() {
@@ -48,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   String get tutorial {
-    if(world.tableOpen?.result == 'furnace' || world.inv['furnace'] != null) return 'next clue: in the towels';
+    if(tutorialOverride(world) != null) return tutorialOverride(world)!;
     if (won) return "You Won!";
     if (world.shopActive) {
       if ((world.inv['wood.raw'] ?? 0) >= 100) {
@@ -131,10 +132,10 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     }
     if (event.character == "q") {
-      world.placeTable();
+      world.place('wood.raw');
     }
     if (event.character == "c") {
-      world.placeRobot();
+      world.place('robot');
     }
     if (event.character == "x") {
       world.openShop();

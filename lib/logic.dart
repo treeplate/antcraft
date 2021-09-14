@@ -4,8 +4,11 @@ import 'dart:ui';
 
 const String stone = 'ore.just.stone';
 const String iron = 'ore.raw.iron';
+const String wood = 'wood.raw';
 
 class World {
+  final Map<IntegerOffset, Placeable> _placeables = {};
+
   World(this.random);
   double screenWidth = 10;
   double screenHeight = 10;
@@ -15,9 +18,8 @@ class World {
   Table? _tableOpen;
   Table? get tableOpen => _tableOpen?.toTable();
   final List<String> ores = [iron];
-  final Map<IntegerOffset, Robot> _robots = {};
   Map<IntegerOffset, Robot> get robots =>
-      _robots.map((key, value) => MapEntry(key, value));
+      (_placeables.map((key, value) => MapEntry(key, value))..removeWhere((key, value) => value is! Robot)).cast<IntegerOffset, Robot>();
   int roomX = 0;
   int roomY = 0;
   final Map<String, int> _inv = {};
@@ -68,8 +70,8 @@ class World {
   }
 
   void placeTable() {
-    if ((_inv['wood.raw'] ?? 0) > 0) {
-      _inv['wood.raw'] = _inv['wood.raw']! - 1;
+    if ((_inv[wood] ?? 0) > 0) {
+      _inv[wood] = _inv[wood]! - 1;
       room.tables[Offset(playerX / 1, playerY / 1)] = Table();
     }
   }
@@ -86,10 +88,10 @@ class World {
     }
   }
 
-  void placeRobot() {
-    if ((_inv['robot'] ?? 0) > 0) {
-      _inv['robot'] = _inv['robot']! - 1;
-      _robots[IntegerOffset(roomX, roomY)] = Robot(
+  void place(String type) {
+    if ((_inv[type] ?? 0) > 0) {
+      _inv[type] = _inv[type]! - 1;
+      _placeables[IntegerOffset(roomX, roomY)] = Robot(
         playerX / 1,
         playerY / 1,
         Offset(
@@ -141,9 +143,9 @@ class World {
             (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
       room.logPos = const Offset(-30, -30);
 
-      _inv['wood.raw'] = (_inv['wood.raw'] ?? 0) + 1;
+      _inv[wood] = (_inv[wood] ?? 0) + 1;
     }
-    for (MapEntry<IntegerOffset, Robot> robot in _robots.entries.toList()) {
+    for (MapEntry<IntegerOffset, Robot> robot in robots.entries.toList()) {
       if (_rooms[robot.key.x] == null) {
         _rooms[robot.key.x] = {};
       }
@@ -170,43 +172,43 @@ class World {
               (robot.value.dy > playerY && robot.value.dy < playerY + 5)) &&
           roomX == robot.key.x &&
           roomY == robot.key.y) {
-        _inv['wood.raw'] = (_inv['wood.raw'] ?? 0) + robot.value.inv;
-        _robots[robot.key] = Robot(
+        _inv[wood] = (_inv[wood] ?? 0) + robot.value.inv;
+        _placeables[robot.key] = Robot(
           robot.value.dx,
           robot.value.dy,
           robot.value.pos,
           0,
         );
-        robot = MapEntry(robot.key, _robots[robot.key]!);
+        robot = MapEntry(robot.key, robots[robot.key]!);
       }
 
       //("Pre-move ${robot.key.hashCode} pos ${_robots[robot.key]} logpos ${room.logPos}");
       if (Offset(robot.value.dx, robot.value.dy) == room.logPos) {
-        _robots[robot.key] = Robot(
+        _placeables[robot.key] = Robot(
           robot.value.dx,
           robot.value.dy,
           robot.value.pos,
           robot.value.inv + 1,
         );
-        robot = MapEntry(robot.key, _robots[robot.key]!);
+        robot = MapEntry(robot.key, robots[robot.key]!);
         room.logPos = const Offset(-30, -30);
       }
       void hone(x, y) {
         if (robot.value.dx > x) {
           //("L.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx - .5,
             robot.value.dy,
             robot.value.pos,
             robot.value.inv,
           );
           //("L.${robot.key.hashCode} postpos ${_robots[robot.key]}");
-          robot = _robots.entries
-              .toList()[_robots.keys.toList().indexOf(robot.key)];
+          robot = robots.entries
+              .toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dx < x) {
           //("R.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx + .5,
             robot.value.dy,
             robot.value.pos,
@@ -401,7 +403,11 @@ class Room {
 
 enum SlotKey { x0y0, x0y1, x1y0, x1y1 }
 
-class Table {
+Map<String, Placeable Function(double, double, Offset)> x = {wood: (dx, dy, p) => Table(), 'robot': (dx, dy, lp) => Robot(dx, dy, lp)};
+
+class Placeable {}
+
+class Table extends Placeable {
   Map<SlotKey, String> grid = {
     SlotKey.x0y0: "none",
     SlotKey.x0y1: "none",
@@ -429,7 +435,7 @@ class Table {
       Table()..grid = grid.map((key, value) => MapEntry(key, value));
 }
 
-class Robot {
+class Robot extends Placeable {
   final double dx;
   final double dy;
   final int inv;

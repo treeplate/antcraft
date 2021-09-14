@@ -111,7 +111,7 @@ void main() {
     expect(world.tableOpen!.result, 'robot');
     world.craft();
     expect(world.inv['robot'], 1);
-    world.placeRobot();
+    world.place('robot');
     expect(world.robots, hasLength(1));
   });
   testWidgets("Robot movement/gathering", (WidgetTester tester) async {
@@ -123,13 +123,13 @@ void main() {
     world.tick();
     world.right();
     world.down();
-    world.placeTable();
+    world.place('wood.raw');
     world.openTable();
     world.mine(() {});
     await tester.pump(const Duration(seconds: 2));
     world.setCraftCorner(SlotKey.x0y0, iron);
     world.craft();
-    world.placeRobot();
+    world.place('robot');
     IntegerOffset robot = world.robots.keys.single;
     Robot roombot = world.robots.values.single;
     expect(robot.x, world.roomX);
