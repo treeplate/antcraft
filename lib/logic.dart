@@ -345,10 +345,10 @@ class Table {
   };
 
   String get result {
-    if (grid[SlotKey.x0y0] == stone &&
-        grid[SlotKey.x1y0] == "none" &&
-        grid[SlotKey.x0y1] == "none" &&
-        grid[SlotKey.x1y1] == stone) {
+    if (grid[SlotKey.x0y0] == iron &&
+        grid[SlotKey.x1y0] == iron &&
+        grid[SlotKey.x0y1] == iron &&
+        grid[SlotKey.x1y1] == iron) {
       return "furnace";
     }
     if (grid[SlotKey.x0y0] == iron &&

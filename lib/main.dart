@@ -47,6 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   String get tutorial {
+    if(world.tableOpen?.result == 'furnace' || world.inv['furnace'] != null) return 'next clue: in the towels';
     if (won) return "You Won!";
     if (world.shopActive) {
       if ((world.inv['wood.raw'] ?? 0) >= 100) {
