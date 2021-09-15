@@ -69,11 +69,11 @@ void main() {
     world.down();
     expect(world.inv['wood.raw'], 1);
     expect(world.tableOpen, isNull);
-    expect(world.room.tables, isEmpty);
+    expect(world.tablesAt(world.roomX, world.roomY), isEmpty);
     world.openTable();
     expect(world.tableOpen, isNull);
-    world.placeTable();
-    expect(world.room.tables, hasLength(1));
+    world.place('table');
+    expect(world.tablesAt(world.roomX, world.roomY), hasLength(1));
     expect(world.tableOpen, isNull);
     world.openTable();
     expect(world.tableOpen, isNotNull);
@@ -102,7 +102,7 @@ void main() {
     world.tick();
     world.right();
     world.down();
-    world.placeTable();
+    world.place('table');
     world.openTable();
     world.mine(() {});
     await tester.pump(const Duration(seconds: 2));
@@ -111,7 +111,7 @@ void main() {
     expect(world.tableOpen!.result, 'robot');
     world.craft();
     expect(world.inv['robot'], 1);
-    world.placeRobot();
+    world.place('robot');
     expect(world.robots, hasLength(1));
   });
   testWidgets("Robot movement/gathering", (WidgetTester tester) async {
@@ -123,13 +123,13 @@ void main() {
     world.tick();
     world.right();
     world.down();
-    world.placeTable();
+    world.place('wood.raw');
     world.openTable();
     world.mine(() {});
     await tester.pump(const Duration(seconds: 2));
     world.setCraftCorner(SlotKey.x0y0, iron);
     world.craft();
-    world.placeRobot();
+    world.place('robot');
     IntegerOffset robot = world.robots.keys.single;
     Robot roombot = world.robots.values.single;
     expect(robot.x, world.roomX);

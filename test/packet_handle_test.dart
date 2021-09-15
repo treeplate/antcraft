@@ -140,7 +140,6 @@ class TestWorld extends World {
   Room get room {
     return Room(
       Offset(roomX / 1, roomY / 1),
-      {Offset(playerX, playerY): Table()},
       iron,
       playerX == roomX,
       const Offset(100, 101),
@@ -160,13 +159,11 @@ class TestWorld extends World {
   @override
   void craft() => logs.add(9);
   @override
-  void placeTable() => logs.add(12);
+  void place(x) => logs.add(x.length);
   @override
   void openTable() => logs.add(7);
   @override
   void closeTable() => logs.add(10);
-  @override
-  void placeRobot() => logs.add(11);
   @override
   void setCraftCorner(SlotKey key, String string) =>
       logs.add(itemToNumber(string) + key.index);
@@ -193,7 +190,7 @@ class TestWorld extends World {
   bool get shopActive => playerY == roomY;
 
   @override
-  Table? get tableOpen => Table();
+  Table? get tableOpen => Table(63, 65);
 
   @override
   void tick() {

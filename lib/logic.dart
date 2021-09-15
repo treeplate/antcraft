@@ -13,8 +13,8 @@ const String wood = 'wood.raw';
 
 class World {
   int _roomX = 0;
-
   int _roomY = 0;
+  final Map<IntegerOffset, Placeable> _placeables = {};
 
   World(this.random);
   double screenWidth = 10;
@@ -23,11 +23,12 @@ class World {
   Table? _tableOpen;
   Table? get tableOpen => _tableOpen?.toTable();
   final List<String> _ores = [iron];
-  final Map<IntegerOffset, Robot> _robots = {};
-  Map<IntegerOffset, Robot> get robots =>
-      _robots.map((key, value) => MapEntry(key, value));
   int get roomX => _roomX;
   int get roomY => _roomY;
+  Map<IntegerOffset, Robot> get robots =>
+      (_placeables.map((key, value) => MapEntry(key, value))
+            ..removeWhere((key, value) => value is! Robot))
+          .cast<IntegerOffset, Robot>();
   final Map<String, int> _inv = {};
   Map<String, int> get inv => _inv.map((key, value) => MapEntry(key, value));
   bool _recentMined = false;
@@ -39,6 +40,17 @@ class World {
   bool _shopActive = false;
   bool get shopActive => _shopActive;
   final Random random;
+
+  Iterable<MapEntry<Offset, Table>> tablesAt(int rx, int ry) {
+    return Map.fromEntries(_placeables.entries.where((element) =>
+            element.value is Table &&
+            element.key.x == rx &&
+            element.key.y == ry))
+        .values
+        .cast<Table>()
+        .map((e) => MapEntry(Offset(e.x, e.y), e));
+  }
+
   void left() {
     _xVel--;
   }
@@ -75,15 +87,8 @@ class World {
     }
   }
 
-  void placeTable() {
-    if ((_inv[wood] ?? 0) > 0) {
-      _inv[wood] = _inv[wood]! - 1;
-      room.tables[Offset(playerX, playerY)] = Table();
-    }
-  }
-
   void openTable() {
-    for (MapEntry<Offset, Table> table in room.tables.entries) {
+    for (MapEntry<Offset, Table> table in tablesAt(roomX, roomY)) {
       Offset logPos = table.key;
       if (((logPos.dx > playerX && logPos.dx < playerX + 5) ||
               (logPos.dx + 3 > playerX && logPos.dx + 3 < playerX + 5)) &&
@@ -94,10 +99,10 @@ class World {
     }
   }
 
-  void placeRobot() {
-    if ((_inv['robot'] ?? 0) > 0) {
-      _inv['robot'] = _inv['robot']! - 1;
-      _robots[IntegerOffset(roomX, roomY)] = Robot(
+  void place(String type) {
+    if ((_inv[type] ?? 0) > 0) {
+      _inv[type] = _inv[type]! - 1;
+      _placeables[IntegerOffset(roomX, roomY)] = Robot(
         playerX / 1,
         playerY / 1,
         Offset(
@@ -147,7 +152,7 @@ class World {
 
       _inv[wood] = (_inv[wood] ?? 0) + 1;
     }
-    for (MapEntry<IntegerOffset, Robot> robot in _robots.entries.toList()) {
+    for (MapEntry<IntegerOffset, Robot> robot in robots.entries.toList()) {
       if (_rooms[robot.key.x] == null) {
         _rooms[robot.key.x] = {};
       }
@@ -157,7 +162,6 @@ class World {
             (random.nextDouble() * (screenWidth - 15)).roundToDouble(),
             (random.nextDouble() * (screenHeight - 15)).roundToDouble(),
           ),
-          {},
           (_ores..shuffle()).first,
           robot.key.x == 1 && robot.key.y == 1,
           Offset(
@@ -175,74 +179,74 @@ class World {
           roomX == robot.key.x &&
           roomY == robot.key.y) {
         _inv[wood] = (_inv[wood] ?? 0) + robot.value.inv;
-        _robots[robot.key] = Robot(
+        _placeables[robot.key] = Robot(
           robot.value.dx,
           robot.value.dy,
           robot.value.pos,
           0,
         );
-        robot = MapEntry(robot.key, _robots[robot.key]!);
+        robot = MapEntry(robot.key, robots[robot.key]!);
       }
 
       //("Pre-move ${robot.key.hashCode} pos ${_robots[robot.key]} logpos ${room.logPos}");
       if (Offset(robot.value.dx, robot.value.dy) == room.logPos) {
-        _robots[robot.key] = Robot(
+        _placeables[robot.key] = Robot(
           robot.value.dx,
           robot.value.dy,
           robot.value.pos,
           robot.value.inv + 1,
         );
-        robot = MapEntry(robot.key, _robots[robot.key]!);
+        robot = MapEntry(robot.key, robots[robot.key]!);
         room.logPos = const Offset(-30, -30);
       }
       void hone(x, y) {
         if (robot.value.dx > x) {
           //("L.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx - .5,
             robot.value.dy,
             robot.value.pos,
             robot.value.inv,
           );
           //("L.${robot.key.hashCode} postpos ${_robots[robot.key]}");
-          robot = _robots.entries
-              .toList()[_robots.keys.toList().indexOf(robot.key)];
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dx < x) {
           //("R.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx + .5,
             robot.value.dy,
             robot.value.pos,
             robot.value.inv,
           );
           //("R.${robot.key.hashCode} postpos ${_robots[robot.key]}");
-          robot = _robots.entries
-              .toList()[_robots.keys.toList().indexOf(robot.key)];
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dy > y) {
           //("U.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx,
             robot.value.dy - .5,
             robot.value.pos,
             robot.value.inv,
           );
           //("U.${robot.key.hashCode} postpos ${_robots[robot.key]}");
-          robot = _robots.entries
-              .toList()[_robots.keys.toList().indexOf(robot.key)];
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.value.dy < y) {
           //("D.${robot.key.hashCode} pos ${_robots[robot.key]}");
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx,
             robot.value.dy + .5,
             robot.value.pos,
             robot.value.inv,
           );
           //("D.${robot.key.hashCode} postpos ${_robots[robot.key]}");
-          robot = _robots.entries
-              .toList()[_robots.keys.toList().indexOf(robot.key)];
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
       }
 
@@ -250,44 +254,44 @@ class World {
         hone(room.logPos.dx, room.logPos.dy);
       } else {
         if (robot.key.x > roomX) {
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx - .5,
             robot.value.dy,
             robot.value.pos,
             robot.value.inv,
           );
-          robot = _robots.entries
-              .toList()[_robots.keys.toList().indexOf(robot.key)];
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.key.x < roomX) {
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx + .5,
             robot.value.dy,
             robot.value.pos,
             robot.value.inv,
           );
-          robot = _robots.entries
-              .toList()[_robots.keys.toList().indexOf(robot.key)];
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.key.y < roomY) {
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx,
             robot.value.dy + .5,
             robot.value.pos,
             robot.value.inv,
           );
-          robot = _robots.entries
-              .toList()[_robots.keys.toList().indexOf(robot.key)];
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (robot.key.y > roomY) {
-          _robots[robot.key] = Robot(
+          _placeables[robot.key] = Robot(
             robot.value.dx,
             robot.value.dy - .5,
             robot.value.pos,
             robot.value.inv,
           );
-          robot = _robots.entries
-              .toList()[_robots.keys.toList().indexOf(robot.key)];
+          robot =
+              robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
         }
         if (roomX == robot.key.x && roomY == robot.key.y) {
           hone(
@@ -297,38 +301,38 @@ class World {
         }
       }
       if (robot.value.dx <= 0) {
-        _robots.remove(robot.key);
-        _robots[IntegerOffset(robot.key.x - 1, robot.key.y)] = Robot(
+        _placeables.remove(robot.key);
+        _placeables[IntegerOffset(robot.key.x - 1, robot.key.y)] = Robot(
           screenWidth.roundToDouble() - 1,
           robot.value.dy,
           robot.value.pos,
           robot.value.inv,
         );
-        robot = _robots.entries.toList()[_robots.keys.length - 1];
+        robot = robots.entries.toList()[robots.keys.length - 1];
       }
       if (robot.value.dx >= screenWidth) {
-        _robots.remove(robot.key);
-        _robots[IntegerOffset(robot.key.x + 1, robot.key.y)] = Robot(
+        _placeables.remove(robot.key);
+        _placeables[IntegerOffset(robot.key.x + 1, robot.key.y)] = Robot(
           1,
           robot.value.dy,
           robot.value.pos,
           robot.value.inv,
         );
-        robot = _robots.entries.toList()[_robots.keys.length - 1];
+        robot = robots.entries.toList()[robots.keys.length - 1];
       }
       if (robot.value.dy <= 0) {
-        _robots.remove(robot.key);
-        _robots[IntegerOffset(robot.key.x, robot.key.y - 1)] = Robot(
+        _placeables.remove(robot.key);
+        _placeables[IntegerOffset(robot.key.x, robot.key.y - 1)] = Robot(
           robot.value.dx,
           screenHeight.roundToDouble() - 1,
           robot.value.pos,
           robot.value.inv,
         );
-        robot = _robots.entries.toList()[_robots.keys.length - 1];
+        robot = robots.entries.toList()[robots.keys.length - 1];
       }
       if (robot.value.dy >= screenHeight) {
-        _robots.remove(robot.key);
-        _robots[IntegerOffset(robot.key.x, robot.key.y + 1)] = Robot(
+        _placeables.remove(robot.key);
+        _placeables[IntegerOffset(robot.key.x, robot.key.y + 1)] = Robot(
           robot.value.dx,
           1,
           robot.value.pos,
@@ -376,7 +380,6 @@ class World {
           (random.nextDouble() * (screenWidth - 15)).roundToDouble(),
           (random.nextDouble() * (screenHeight - 15)).roundToDouble(),
         ),
-        {},
         (_ores..shuffle()).first,
         roomX == 1 && roomY == 1,
         Offset(
@@ -447,11 +450,11 @@ class World {
           connection.send([6, 10]);
           break;
         case 11:
-          placeRobot();
+          place('robot');
           connection.send([6, 11]);
           break;
         case 12:
-          placeTable();
+          place('table');
           connection.send([6, 12]);
           break;
         case 13:
@@ -497,7 +500,7 @@ class World {
               room.logPos.dy,
               room.orePos.dx,
               room.orePos.dy,
-              room.tables
+              Map.fromEntries(tablesAt(roomX, roomY))
                   .map(
                     (a, b) => MapEntry(
                       [a.dx, a.dy],
@@ -577,17 +580,25 @@ class World {
 
 class Room {
   Offset logPos;
-  final Map<Offset, Table> tables;
   final String ore;
   final Offset orePos;
   final bool shop;
 
-  Room(this.logPos, this.tables, this.ore, this.shop, this.orePos);
+  Room(this.logPos, this.ore, this.shop, this.orePos);
 }
 
 enum SlotKey { x0y0, x0y1, x1y0, x1y1 }
 
-class Table {
+Map<String, Placeable Function(double, double, Offset)> x = {
+  wood: (dx, dy, p) => Table(dx, dy),
+  'robot': (dx, dy, lp) => Robot(dx, dy, lp)
+};
+
+class Placeable {}
+
+class Table extends Placeable {
+  final double x;
+  final double y;
   Map<SlotKey, String> grid = {
     SlotKey.x0y0: "none",
     SlotKey.x0y1: "none",
@@ -595,11 +606,13 @@ class Table {
     SlotKey.x1y1: "none",
   };
 
+  Table(this.x, this.y);
+
   String get result {
-    if (grid[SlotKey.x0y0] == stone &&
-        grid[SlotKey.x1y0] == "none" &&
-        grid[SlotKey.x0y1] == "none" &&
-        grid[SlotKey.x1y1] == stone) {
+    if (grid[SlotKey.x0y0] == iron &&
+        grid[SlotKey.x1y0] == iron &&
+        grid[SlotKey.x0y1] == iron &&
+        grid[SlotKey.x1y1] == iron) {
       return "furnace";
     }
     if (grid[SlotKey.x0y0] == iron &&
@@ -612,10 +625,10 @@ class Table {
   }
 
   Table toTable() =>
-      Table()..grid = grid.map((key, value) => MapEntry(key, value));
+      Table(x, y)..grid = grid.map((key, value) => MapEntry(key, value));
 }
 
-class Robot {
+class Robot extends Placeable {
   final double dx;
   final double dy;
   final int inv;
