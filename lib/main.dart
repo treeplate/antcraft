@@ -71,6 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return '//TODO(tree): add more tutorial';
   }
 
+  bool invActive = false;
   bool won = false;
   KeyEventResult _handleKeyPress(FocusNode node, RawKeyEvent event) {
     if (event.logicalKey == LogicalKeyboardKey.keyW) {
@@ -143,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     if (event.character == "e" && e == false) {
       e = true;
-      world.openInventory();
+      invActive = !invActive;
     }
 
     return KeyEventResult.handled;
@@ -338,7 +339,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               goldKey: "wood.raw",
                             ),
                             TextButton(
-                                onPressed: () => world.shopActive = false,
+                                onPressed: world.closeShop,
                                 child: const Text("Leave shop")),
                           ],
                         ),
@@ -410,7 +411,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                     ),
-                  if (world.invActive)
+                  if (invActive)
                     Center(
                       child: Container(
                         width: 300,

@@ -1,55 +1,63 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
+import 'dart:isolate';
 import 'dart:math';
 import 'dart:ui';
 
+import 'packetbuffer.dart';
+
 const String stone = 'ore.just.stone';
 const String iron = 'ore.raw.iron';
+const String wood = 'wood.raw';
 
 class World {
+  int _roomX = 0;
+
+  int _roomY = 0;
+
   World(this.random);
   double screenWidth = 10;
   double screenHeight = 10;
   final Map<int, Map<int, Room>> _rooms = {};
-  Map<int, Map<int, Room>> get rooms => _rooms.map((key, value) =>
-      MapEntry(key, value.map((key, value) => MapEntry(key, value))));
   Table? _tableOpen;
   Table? get tableOpen => _tableOpen?.toTable();
-  final List<String> ores = [iron];
+  final List<String> _ores = [iron];
   final Map<IntegerOffset, Robot> _robots = {};
   Map<IntegerOffset, Robot> get robots =>
       _robots.map((key, value) => MapEntry(key, value));
-  int roomX = 0;
-  int roomY = 0;
+  int get roomX => _roomX;
+  int get roomY => _roomY;
   final Map<String, int> _inv = {};
   Map<String, int> get inv => _inv.map((key, value) => MapEntry(key, value));
-  bool recentMined = false;
-  int playerX = 0;
-  int playerY = 0;
-  int xVel = 0;
-  int yVel = 0;
-  int cooldown = 2;
-  bool shopActive = false;
-  bool invActive = false;
+  bool _recentMined = false;
+  double playerX = 0;
+  double playerY = 0;
+  double _xVel = 0;
+  double _yVel = 0;
+  final int _cooldown = 2;
+  bool _shopActive = false;
+  bool get shopActive => _shopActive;
   final Random random;
   void left() {
-    xVel--;
+    _xVel--;
   }
 
   void up() {
-    yVel--;
+    _yVel--;
   }
 
   void down() {
-    yVel++;
+    _yVel++;
   }
 
   void right() {
-    xVel++;
+    _xVel++;
   }
 
   void mine(VoidCallback callback) {
-    if (!recentMined) {
-      recentMined = true;
+    if (!_recentMined) {
+      _recentMined = true;
       if (playerX > room.orePos.dx &&
           playerY > room.orePos.dy &&
           playerX < room.orePos.dx + 30 &&
@@ -61,16 +69,16 @@ class World {
       }
       callback();
       Timer(
-        Duration(seconds: cooldown),
-        () => recentMined = false,
+        Duration(seconds: _cooldown),
+        () => _recentMined = false,
       );
     }
   }
 
   void placeTable() {
-    if ((_inv['wood.raw'] ?? 0) > 0) {
-      _inv['wood.raw'] = _inv['wood.raw']! - 1;
-      room.tables[Offset(playerX / 1, playerY / 1)] = Table();
+    if ((_inv[wood] ?? 0) > 0) {
+      _inv[wood] = _inv[wood]! - 1;
+      room.tables[Offset(playerX, playerY)] = Table();
     }
   }
 
@@ -107,31 +115,27 @@ class World {
         playerY < (screenHeight / 2 + 15) - 7.5 &&
         roomX == 1 &&
         roomY == 1) {
-      shopActive = true;
+      _shopActive = true;
     }
-  }
-
-  void openInventory() {
-    invActive = !invActive;
   }
 
   void tick() {
-    playerX += xVel;
-    playerY += yVel;
+    playerX += _xVel;
+    playerY += _yVel;
     if (playerX <= 0) {
-      roomX--;
-      playerX = (screenWidth - 6).round();
+      _roomX--;
+      playerX = (screenWidth - 6);
     }
-    if (playerX >= (screenWidth - 5).round()) {
-      roomX++;
+    if (playerX >= (screenWidth - 5)) {
+      _roomX++;
       playerX = 1;
     }
     if (playerY <= 0) {
-      roomY--;
-      playerY = (screenHeight - 6).round();
+      _roomY--;
+      playerY = (screenHeight - 6);
     }
-    if (playerY >= (screenHeight - 5).round()) {
-      roomY++;
+    if (playerY >= (screenHeight - 5)) {
+      _roomY++;
       playerY = 1;
     }
     if (((room.logPos.dx > playerX && room.logPos.dx < playerX + 5) ||
@@ -141,7 +145,7 @@ class World {
             (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
       room.logPos = const Offset(-30, -30);
 
-      _inv['wood.raw'] = (_inv['wood.raw'] ?? 0) + 1;
+      _inv[wood] = (_inv[wood] ?? 0) + 1;
     }
     for (MapEntry<IntegerOffset, Robot> robot in _robots.entries.toList()) {
       if (_rooms[robot.key.x] == null) {
@@ -154,7 +158,7 @@ class World {
             (random.nextDouble() * (screenHeight - 15)).roundToDouble(),
           ),
           {},
-          (ores..shuffle()).first,
+          (_ores..shuffle()).first,
           robot.key.x == 1 && robot.key.y == 1,
           Offset(
             (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
@@ -170,7 +174,7 @@ class World {
               (robot.value.dy > playerY && robot.value.dy < playerY + 5)) &&
           roomX == robot.key.x &&
           roomY == robot.key.y) {
-        _inv['wood.raw'] = (_inv['wood.raw'] ?? 0) + robot.value.inv;
+        _inv[wood] = (_inv[wood] ?? 0) + robot.value.inv;
         _robots[robot.key] = Robot(
           robot.value.dx,
           robot.value.dy,
@@ -373,7 +377,7 @@ class World {
           (random.nextDouble() * (screenHeight - 15)).roundToDouble(),
         ),
         {},
-        (ores..shuffle()).first,
+        (_ores..shuffle()).first,
         roomX == 1 && roomY == 1,
         Offset(
           (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
@@ -386,6 +390,188 @@ class World {
 
   void closeTable() {
     _tableOpen = null;
+  }
+
+  void handlePacket(PacketBuffer buffer, SendPort connection) {
+    if (buffer.available > 0) {
+      int op = buffer.readUint8List(1).single;
+      switch (op) {
+        case 1:
+          up();
+          connection.send([6, 1]);
+          break;
+        case 2:
+          down();
+          connection.send([6, 2]);
+          break;
+        case 3:
+          left();
+          connection.send([6, 3]);
+          break;
+        case 4:
+          right();
+          connection.send([6, 4]);
+          break;
+        case 5:
+          openShop();
+          connection.send([6, 5]);
+          break;
+        case 6:
+          closeShop();
+          connection.send([6, 6]);
+          break;
+        case 7:
+          openTable();
+          connection.send([6, 7]);
+          break;
+        case 8:
+          if (buffer.available >= 1) {
+            int num = buffer.readUint8List(1).single;
+            SlotKey slotKey = SlotKey.values[num & 3];
+            String item;
+            item = numberToItem((num - num % 3) ~/ 4);
+            setCraftCorner(slotKey, item);
+          } else {
+            connection.send([7]);
+            print('[7] sending');
+            return;
+          }
+          connection.send([6, 8]);
+          break;
+        case 9:
+          craft();
+          connection.send([6, 9]);
+          break;
+        case 10:
+          closeTable();
+          connection.send([6, 10]);
+          break;
+        case 11:
+          placeRobot();
+          connection.send([6, 11]);
+          break;
+        case 12:
+          placeTable();
+          connection.send([6, 12]);
+          break;
+        case 13:
+          mine(() {});
+          connection.send([6, 13]);
+          break;
+        case 14:
+          connection.send([0, playerX, playerY]);
+          break;
+        case 15:
+          connection.send([1, roomX, roomY]);
+          break;
+        case 16:
+          connection.send([
+            2,
+            inv
+                .map((key, value) => MapEntry(itemToNumber(key), value))
+                .entries
+                .map((e) => [e.key, e.value])
+                .expand((element) => element)
+          ]
+              .expand((element) => element is Iterable ? element : [element])
+              .toList());
+          break;
+        case 17:
+          connection.send([
+            3,
+            robots
+                .map((a, b) => MapEntry([a.x, a.y], [b.dx, b.dy]))
+                .entries
+                .map((e) => [e.key, e.value])
+                .expand((element) => element)
+                .expand((element) => element)
+          ]
+              .expand((element) => element is Iterable ? element : [element])
+              .toList());
+          break;
+        case 18:
+          connection.send(
+            [
+              5,
+              room.logPos.dx,
+              room.logPos.dy,
+              room.orePos.dx,
+              room.orePos.dy,
+              room.tables
+                  .map(
+                    (a, b) => MapEntry(
+                      [a.dx, a.dy],
+                      [
+                        b.grid
+                            .map((a2, b2) =>
+                                MapEntry(a2.index, itemToNumber(b2)))
+                            .entries
+                            .map((e) => [e.key, e.value])
+                            .expand((element) => element),
+                        itemToNumber(b.result),
+                      ].expand((element) =>
+                          element is Iterable ? element : [element]),
+                    ),
+                  )
+                  .entries
+                  .map((e) => [e.key, e.value])
+                  .expand((element) => element)
+                  .expand(
+                    (element) => element is Iterable ? element : [element],
+                  ),
+              itemToNumber(room.ore),
+              room.shop ? 1 : 0,
+            ]
+                .expand((element) => element is Iterable ? element : [element])
+                .toList(),
+          );
+          break;
+        default:
+          connection.send([7]);
+      }
+    } else {
+      print('[7] sending');
+      connection.send([7]);
+    }
+  }
+
+  String numberToItem(int num) {
+    switch (num) {
+      case 0:
+        return stone;
+      case 1:
+        return iron;
+      case 2:
+        return wood;
+
+      case 3:
+        return 'robot';
+      case 4:
+        return 'none';
+      default:
+        throw UnimplementedError();
+    }
+  }
+
+  int itemToNumber(String item) {
+    switch (item) {
+      case stone:
+        return 0;
+      case iron:
+        return 1;
+      case wood:
+        return 2;
+      case 'robot':
+        return 3;
+      case 'none':
+        return 4;
+      default:
+        throw UnimplementedError();
+    }
+  }
+
+  void closeShop() {
+    _shopActive = false;
   }
 }
 
