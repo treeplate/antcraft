@@ -102,7 +102,7 @@ class World {
   void place(String type) {
     if ((_inv[type] ?? 0) > 0) {
       _inv[type] = _inv[type]! - 1;
-      _placeables[IntegerOffset(roomX, roomY)] = Robot(
+      _placeables[IntegerOffset(roomX, roomY)] = placingTypes[type]!(
         playerX / 1,
         playerY / 1,
         Offset(
@@ -589,7 +589,7 @@ class Room {
 
 enum SlotKey { x0y0, x0y1, x1y0, x1y1 }
 
-Map<String, Placeable Function(double, double, Offset)> x = {
+Map<String, Placeable Function(double, double, Offset)> placingTypes = {
   wood: (dx, dy, p) => Table(dx, dy),
   'robot': (dx, dy, lp) => Robot(dx, dy, lp)
 };
