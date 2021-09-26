@@ -189,7 +189,8 @@ class World {
       }
 
       //("Pre-move ${robot.key.hashCode} pos ${_robots[robot.key]} logpos ${room.logPos}");
-      if (Offset(robot.value.dx, robot.value.dy) == room.logPos) {
+      if (robot.value.dx == room.logPos.dx &&
+          robot.value.dy == room.logPos.dy) {
         _placeables[robot.key] = Robot(
           robot.value.dx,
           robot.value.dy,
@@ -262,8 +263,7 @@ class World {
           );
           robot =
               robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
-        }
-        if (robot.key.x < roomX) {
+        } else if (robot.key.x < roomX) {
           _placeables[robot.key] = Robot(
             robot.value.dx + .5,
             robot.value.dy,
@@ -272,8 +272,7 @@ class World {
           );
           robot =
               robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
-        }
-        if (robot.key.y < roomY) {
+        } else if (robot.key.y < roomY) {
           _placeables[robot.key] = Robot(
             robot.value.dx,
             robot.value.dy + .5,
@@ -282,8 +281,7 @@ class World {
           );
           robot =
               robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
-        }
-        if (robot.key.y > roomY) {
+        } else if (robot.key.y > roomY) {
           _placeables[robot.key] = Robot(
             robot.value.dx,
             robot.value.dy - .5,
@@ -292,12 +290,13 @@ class World {
           );
           robot =
               robots.entries.toList()[robots.keys.toList().indexOf(robot.key)];
-        }
-        if (roomX == robot.key.x && roomY == robot.key.y) {
+        } else if (roomX == robot.key.x && roomY == robot.key.y) {
           hone(
             robot.value.pos.dx,
             robot.value.pos.dy,
           );
+        } else {
+          throw "ERR";
         }
       }
       if (robot.value.dx <= 0) {

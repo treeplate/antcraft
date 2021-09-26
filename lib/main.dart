@@ -70,7 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (world.roomY > 1) return "Go up (press w)";
       return "Go down (press s)";
     }
-    return '//TODO(tree): add more tutorial';
+    return 'XXX';
   }
 
   bool invActive = false;
@@ -231,9 +231,11 @@ class _MyHomePageState extends State<MyHomePage> {
                       height: 30,
                     ),
                   ),
-                  for (Offset table in Map.fromIterable(
-                          world.tablesAt(world.roomX, world.roomY))
-                      .keys) ...[
+                  for (Offset table in {
+                    for (MapEntry<Offset, Table> x
+                        in world.tablesAt(world.roomX, world.roomY))
+                      x.key: x.value
+                  }.keys) ...[
                     if (debugMode)
                       Positioned(
                         left: table.dx * 10,
@@ -333,7 +335,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             ShopItem(
-                              100,
+                              1000,
                               () {
                                 won = true;
                               },
