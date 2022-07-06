@@ -129,23 +129,23 @@ class _MyHomePageState extends State<MyHomePage> {
     if (event.logicalKey == LogicalKeyboardKey.keyE && event is RawKeyUpEvent) {
       e = false;
     }
-    if (event.character == "v") {
+    if (event.character == 'v') {
       world.mine(() {
-        mineFeedback = "+1";
+        mineFeedback = '+1';
         Timer(
           const Duration(milliseconds: 500),
-          () => setState(() => mineFeedback = ""),
+          () => setState(() => mineFeedback = ''),
         );
       });
     }
-    if (event.character == "f") {
+    if (event.character == 'f') {
       world.openTable();
     }
     if (event.logicalKey == LogicalKeyboardKey.escape &&
         event is RawKeyDownEvent) {
       world.closeTable();
     }
-    if (event.character == "e" && e == false) {
+    if (event.character == 'e' && e == false) {
       e = true;
       invActive = !invActive;
     }
@@ -158,7 +158,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return KeyEventResult.handled;
   }
 
-  String mineFeedback = "";
+  String mineFeedback = '';
   Map<int, Map<int, List<Offset>>> totalTables = {};
   int frames = 0;
   late Timer movement =
@@ -273,25 +273,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         height: 150,
                       ),
                     ),
-                  Center(
-                      child: Text(won
-                          ? "You Won in $frames frames!"
-                          : "$frames frames and counting")),
-                  if (debugMode)
-                    Positioned(
-                      left: room.logPos.dx * 10,
-                      top: room.logPos.dy * 10,
-                      child: Container(
-                        width: 30,
-                        height: 30,
-                        color: Colors.green,
-                      ),
-                    ),
-                  Positioned(
-                    left: room.logPos.dx * 10,
-                    top: room.logPos.dy * 10,
-                    child: const WoodRenderer(width: 30, height: 30),
-                  ),
+                  Center(child: Text(won ? 'You Won' : '')),
                   for (Entity entity in world
                           .entities[IntegerOffset(world.roomX, world.roomY)] ??
                       []) ...[
@@ -344,15 +326,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       decoration: const BoxDecoration(color: Colors.green),
                     ),
                   ),
-                  Positioned(
-                    left: world.playerX / .1,
-                    top: world.playerY / .1,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: const BoxDecoration(color: Colors.green),
-                    ),
-                  ),
                   if (world.tableOpen != null)
                     Center(
                       child: Container(
@@ -378,7 +351,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                             renderItem(item.key,
                                                 width: 30, height: 30),
                                             Text(
-                                              "${world.inv[item.key] ?? 0}/${item.value}",
+                                              '${world.inv[item.key] ?? 0}/${item.value}',
                                               style: const TextStyle(
                                                 color: Colors.white,
                                               ),
@@ -450,7 +423,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         height: 30,
                                       ),
                                       Text(
-                                        "${world.inv[a]}",
+                                        '${world.inv[a]}',
                                         style: const TextStyle(
                                             color: Colors.white),
                                       ),
@@ -476,8 +449,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     children: [
                       Center(
                           child: renderItem(cell.item, width: 30, height: 30)),
-                      Text(
-                        "${world.inv[cell.item] ?? 0} x ${world.describePlaced(cell.item)} (shortcut: ${cell.keybind.keyLabel})",
+                      parseInlinedIcons(
+                        '${world.inv[cell.item] ?? 0} x ${world.describePlaced(cell.item)} (shortcut: ${cell.keybind.keyLabel})',
                       ),
                     ],
                     mainAxisSize: MainAxisSize.min,

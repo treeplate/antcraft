@@ -5,7 +5,7 @@ import 'package:some_app/core.dart';
 import 'package:some_app/logic.dart';
 
 void main() {
-  testWidgets("Player can move", (WidgetTester tester) async {
+  testWidgets('Player can move', (WidgetTester tester) async {
     World world = World(MockRandom());
     world.tick();
     expect(world.playerX, 4);
@@ -58,7 +58,7 @@ void main() {
     expect(world.roomX, 0);
     expect(world.roomY, -1);
   });
-  testWidgets("Wood collection/placement", (widgetTester) async {
+  testWidgets('Wood collection/placement', (widgetTester) async {
     World world = World(MockRandom());
     expect(world.inv[wood], isNull);
     world.tick();
@@ -79,7 +79,7 @@ void main() {
     world.openTable();
     expect(world.tableOpen, isNotNull);
   });
-  testWidgets("Mining iron", (WidgetTester tester) async {
+  testWidgets('Mining iron', (WidgetTester tester) async {
     World world = World(MockRandom());
     world.tick();
     expect(world.inv[iron], isNull);
@@ -92,7 +92,7 @@ void main() {
     expect(world.inv[stone], isNull);
     expect(world.inv[iron], 1);
   });
-  testWidgets("Robot collection/placement", (WidgetTester tester) async {
+  testWidgets('Robot collection/placement', (WidgetTester tester) async {
     World world = World(MockRandom());
     expect(world.robots, isEmpty);
     expect(world.inv[robot], isNull);
@@ -112,7 +112,7 @@ void main() {
     world.place(robot);
     expect(world.robots, hasLength(1));
   });
-  testWidgets("Robot movement/gathering", (WidgetTester tester) async {
+  testWidgets('Robot movement/gathering', (WidgetTester tester) async {
     World world = World(MockRandom());
     world.tick();
     world.left();

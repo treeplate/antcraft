@@ -3,7 +3,7 @@ import 'package:some_app/logic.dart';
 import 'core.dart';
 
 Map<String, MaterialColor> oreColors = {
-  "iron": Colors.blue,
+  'iron': Colors.blue,
 };
 
 class OreRenderer extends StatelessWidget {
@@ -54,17 +54,20 @@ class WoodRenderer extends StatelessWidget {
     Key? key,
     required this.width,
     required this.height,
+    this.ghost = false,
   }) : super(key: key);
   final double width;
   final double height;
+  final bool ghost;
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      "wood.png",
+      'wood.png',
       width: width,
       height: height,
       fit: BoxFit.cover,
       filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
     );
   }
 }
@@ -82,7 +85,7 @@ class TableRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      "placed-wood.png",
+      'placed-wood.png',
       width: width,
       height: height,
       fit: BoxFit.cover,
@@ -90,6 +93,46 @@ class TableRenderer extends StatelessWidget {
       opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
     );
   }
+}
+
+Row parseInlinedIcons(String text) {
+  List<Widget> result = [];
+  StringBuffer buffer = StringBuffer();
+  bool parsingKey = false;
+  for (int rune in text.runes) {
+    if (parsingKey) {
+      if (rune == 0x7D) {
+        result.add(renderItem(buffer.toString(), width: 30, height: 30));
+        buffer = StringBuffer();
+        parsingKey = false;
+      } else {
+        buffer.writeCharCode(rune);
+      }
+    } else {
+      if (rune == 0x7B) {
+        result.add(Text(
+          buffer.toString(),
+          style: const TextStyle(fontSize: 30),
+        ));
+        buffer = StringBuffer();
+        parsingKey = true;
+      } else {
+        buffer.writeCharCode(rune);
+      }
+    }
+  }
+  if (parsingKey) {
+    result.add(renderItem(buffer.toString(), width: 30, height: 30));
+  } else {
+    result.add(Text(
+      buffer.toString(),
+      style: const TextStyle(fontSize: 30),
+    ));
+  }
+  return Row(
+    children: result,
+    mainAxisSize: MainAxisSize.min,
+  );
 }
 
 Widget renderItem(String? optionalItem,
@@ -101,7 +144,7 @@ Widget renderItem(String? optionalItem,
     );
   }
   String item = optionalItem;
-  if (item.contains(".") && item.substring(0, item.indexOf(".")) == "ore") {
+  if (item.contains('.') && item.substring(0, item.indexOf('.')) == 'ore') {
     if (item == stone) {
       return StoneRenderer(
         width: width,
@@ -109,7 +152,7 @@ Widget renderItem(String? optionalItem,
       );
     } else {
       return OreRenderer(
-        color: oreColors[item.substring(item.indexOf(".") + 1)]!,
+        color: oreColors[item.substring(item.indexOf('.') + 1)]!,
         height: height,
         width: width,
       );
@@ -134,7 +177,7 @@ Widget renderItem(String? optionalItem,
     );
   }
   return Text(
-    "unknown key $item",
+    'unknown key $item',
     style: const TextStyle(color: Colors.red),
   );
 }
@@ -150,8 +193,11 @@ Widget renderEntity(Entity entity,
   if (entity is Table) {
     return TableRenderer(width: width, height: height, ghost: ghost);
   }
+  if (entity is CollectibleWood) {
+    return WoodRenderer(width: width, height: height, ghost: ghost);
+  }
   return Text(
-    "unknown entity $entity",
+    'unknown entity $entity',
     style: const TextStyle(color: Colors.red),
   );
 }
@@ -169,7 +215,7 @@ class RobotRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      "robot.png",
+      'robot.png',
       width: width,
       height: height,
       fit: BoxFit.cover,
@@ -192,7 +238,7 @@ class MinerRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      "miner.png",
+      'miner.png',
       width: width,
       height: height,
       fit: BoxFit.cover,

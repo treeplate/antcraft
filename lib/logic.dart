@@ -40,6 +40,14 @@ class World {
             key, _atOfType<Robot>(key.x, key.y).map((e) => e.value.copy())));
   }
 
+  Map<IntegerOffset, Iterable<CollectibleWood>> get woods {
+    return _entities.map<IntegerOffset, Iterable<CollectibleWood>>(
+        (key, value) => MapEntry(
+            key,
+            _atOfType<CollectibleWood>(key.x, key.y)
+                .map((e) => e.value.copy())));
+  }
+
   Map<IntegerOffset, Iterable<Miner>> get miners {
     return _entities.map<IntegerOffset, Iterable<Miner>>((key, value) =>
         MapEntry(
@@ -98,13 +106,27 @@ class World {
     }
   }
 
+  bool colliding(Offset aStart, double aSize, Offset bStart, double bSize) {
+    Offset aEnd = Offset(aStart.dx + aSize, aStart.dy + aSize);
+    Offset bEnd = Offset(bStart.dx + bSize, bStart.dy + bSize);
+    if (aEnd.dx < bStart.dx) {
+      return false;
+    }
+    if (bEnd.dx < aStart.dx) {
+      return false;
+    }
+    if (aEnd.dy < bStart.dy) {
+      return false;
+    }
+    if (bEnd.dy < aStart.dy) {
+      return false;
+    }
+    return true;
+  }
+
   void openTable() {
     for (MapEntry<Offset, Table> table in _atOfType<Table>(roomX, roomY)) {
-      Offset logPos = table.key;
-      if (((logPos.dx > playerX && logPos.dx < playerX + 5) ||
-              (logPos.dx + 3 > playerX && logPos.dx + 3 < playerX + 5)) &&
-          ((logPos.dy + 3 > playerY && logPos.dy + 3 < playerY + 5) ||
-              (logPos.dy > playerY && logPos.dy < playerY + 5))) {
+      if (colliding(Offset(playerX, playerY), 5, table.key, 3)) {
         _tableOpen = table.value;
       }
     }
@@ -152,14 +174,18 @@ class World {
       _roomY++;
       playerY = 1;
     }
-    if (((room.logPos.dx > playerX && room.logPos.dx < playerX + 5) ||
-            (room.logPos.dx + 3 > playerX &&
-                room.logPos.dx + 3 < playerX + 5)) &&
-        ((room.logPos.dy + 3 > playerY && room.logPos.dy + 3 < playerY + 5) ||
-            (room.logPos.dy > playerY && room.logPos.dy < playerY + 5))) {
-      room.logPos = const Offset(-30, -30);
+    for (CollectibleWood pickup
+        in _atOfType<CollectibleWood>(roomX, roomY).map((e) => e.value)) {
+      if (colliding(
+        Offset(playerX, playerY),
+        5,
+        Offset(pickup.dx, pickup.dy),
+        3,
+      )) {
+        assert(_entities[IntegerOffset(roomX, roomY)]!.remove(pickup));
 
-      _inv[wood] = (inv[wood] ?? 0) + 1;
+        _inv[wood] = (inv[wood] ?? 0) + 1;
+      }
     }
     for (MapEntry<IntegerOffset, Entity> entity in _entities.entries
         .expand((e) => e.value.map((e2) => MapEntry(e.key, e2)))
@@ -171,25 +197,13 @@ class World {
           _rooms[entityRoom.x] = {};
         }
         if (_rooms[entityRoom.x]![entityRoom.y] == null) {
-          _rooms[entityRoom.x]![entityRoom.y] = Room(
-            Offset(
-              (random.nextDouble() * (screenWidth - 15)).roundToDouble(),
-              (random.nextDouble() * (screenHeight - 15)).roundToDouble(),
-            ),
-            (_ores..shuffle()).first,
-            Offset(
-              (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
-              (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
-            ),
-          );
+          genRoom(entityRoom);
         }
         Room room = _rooms[entityRoom.x]![entityRoom.y]!;
-        if (((storer.dx > playerX && storer.dx < playerX + 5) ||
-                (storer.dx + 3 > playerX && storer.dx + 3 < playerX + 5)) &&
-            ((storer.dy + 3 > playerY && storer.dy + 3 < playerY + 5) ||
-                (storer.dy > playerY && storer.dy < playerY + 5)) &&
-            roomX == entityRoom.x &&
-            roomY == entityRoom.y) {
+        if (roomX == entityRoom.x &&
+            roomY == entityRoom.y &&
+            colliding(
+                Offset(playerX, playerY), 5, Offset(storer.dx, storer.dy), 3)) {
           _inv[storer.storedItem(room)] =
               (inv[storer.storedItem(room)] ?? 0) + storer.inv;
           storer.inv = 0;
@@ -206,12 +220,18 @@ class World {
           }
         } else if (storer is Robot) {
           Robot robot = storer;
-          if (robot.dx + 2 > room.logPos.dx &&
-              robot.dx - 2 < room.logPos.dx &&
-              robot.dy + 2 > room.logPos.dy &&
-              robot.dy - 2 < room.logPos.dy) {
-            robot.inv++;
-            room.logPos = const Offset(-30, -30);
+          for (CollectibleWood pickup in woods[entityRoom] ?? []) {
+            if (colliding(
+              Offset(robot.dx, robot.dy),
+              3,
+              Offset(pickup.dx, pickup.dy),
+              3,
+            )) {
+              _entities[entityRoom]!.remove(pickup);
+              assert(robot.storedItem(_rooms[entityRoom.x]![entityRoom.y]!) ==
+                  wood);
+              robot.inv++;
+            }
           }
           void hone(x, y) {
             if (robot.dx > x) {
@@ -238,12 +258,13 @@ class World {
           }
 
           if (robot.inv < 5) {
-            if (room.logPos.dx < 0) {
-              IntegerOffset woodRoom =
-                  nearestRoomWhere((Room r) => r.logPos.dx > 0, to: entityRoom);
+            if (woods[entityRoom]?.isEmpty ?? false) {
+              IntegerOffset woodRoom = nearestRoomWhere(
+                  (Room r, IntegerOffset rPos) => woods[rPos]?.isEmpty ?? false,
+                  to: entityRoom);
               honeRoom(woodRoom.x, woodRoom.y);
             } else {
-              hone(room.logPos.dx, room.logPos.dy);
+              hone(woods[entityRoom]!.first.dx, woods[entityRoom]!.first.dy);
             }
           } else {
             if (roomX == entityRoom.x && roomY == entityRoom.y) {
@@ -256,7 +277,7 @@ class World {
             }
           }
           if (robot.dx < 0) {
-            _entities[entityRoom]?.remove(robot);
+            _entities[entityRoom]!.remove(robot);
             _placePrebuilt(
               IntegerOffset(entityRoom.x - 1, entityRoom.y),
               robot..dx = screenWidth.roundToDouble() - 1,
@@ -264,7 +285,7 @@ class World {
             entityRoom = IntegerOffset(entityRoom.x - 1, entityRoom.y);
           }
           if (robot.dx > screenWidth) {
-            _entities[entityRoom]?.remove(robot);
+            _entities[entityRoom]!.remove(robot);
             _placePrebuilt(
               IntegerOffset(entityRoom.x + 1, entityRoom.y),
               robot..dx = 1,
@@ -272,7 +293,7 @@ class World {
             entityRoom = IntegerOffset(entityRoom.x + 1, entityRoom.y);
           }
           if (robot.dy < 0) {
-            _entities[entityRoom]?.remove(robot);
+            _entities[entityRoom]!.remove(robot);
             _placePrebuilt(
               IntegerOffset(entityRoom.x, entityRoom.y - 1),
               robot..dy = screenHeight.roundToDouble() - 1,
@@ -280,7 +301,7 @@ class World {
             entityRoom = IntegerOffset(entityRoom.x, entityRoom.y - 1);
           }
           if (robot.dy > screenHeight) {
-            _entities[entityRoom]?.remove(robot);
+            _entities[entityRoom]!.remove(robot);
             _placePrebuilt(
               IntegerOffset(entityRoom.x, entityRoom.y + 1),
               robot..dy = 1,
@@ -312,17 +333,7 @@ class World {
       _rooms[roomX] = {};
     }
     if (_rooms[roomX]![roomY] == null) {
-      _rooms[roomX]![roomY] = Room(
-        Offset(
-          (random.nextDouble() * (screenWidth - 15)).roundToDouble(),
-          (random.nextDouble() * (screenHeight - 15)).roundToDouble(),
-        ),
-        (_ores..shuffle()).first,
-        Offset(
-          (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
-          (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
-        ),
-      );
+      genRoom(IntegerOffset(roomX, roomY));
     }
     return _rooms[roomX]![roomY]!;
   }
@@ -411,8 +422,6 @@ class World {
           connection.send(
             [
               5,
-              room.logPos.dx,
-              room.logPos.dy,
               room.orePos.dx,
               room.orePos.dy,
               itemToNumber(room.ore),
@@ -462,10 +471,10 @@ class World {
     }
   }
 
-  IntegerOffset nearestRoomWhere(bool Function(Room r) test,
+  IntegerOffset nearestRoomWhere(bool Function(Room r, IntegerOffset rPos) test,
       {IntegerOffset? to}) {
     to ??= IntegerOffset(roomX, roomY);
-    if (test(_rooms[to.x]![to.y]!)) {
+    if (test(_rooms[to.x]![to.y]!, to)) {
       return to;
     }
     return IntegerOffset(to.x, to.y - 1);
@@ -473,24 +482,40 @@ class World {
 
   String describePlaced(String item) {
     if (item == wood) {
-      return "Crafing Table";
+      return 'Crafing Table';
     }
     if (item == robot) {
-      return "Wood Collector";
+      return '{$wood}Collector';
     }
     if (item == miner) {
-      return "Ore Miner";
+      return 'Ore Miner';
     }
-    return "Unknown placeable $item";
+    return 'Unknown placeable $item';
+  }
+
+  void genRoom(IntegerOffset room) {
+    _rooms[room.x]![room.y] = Room(
+      (_ores..shuffle()).first,
+      Offset(
+        (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
+        (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
+      ),
+    );
+    _placePrebuilt(
+      room,
+      CollectibleWood(
+        (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
+        (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
+      ),
+    );
   }
 }
 
 class Room {
-  Offset logPos;
   final String? ore;
   final Offset orePos;
 
-  Room(this.logPos, this.ore, this.orePos);
+  Room(this.ore, this.orePos);
 
   String oreAt(double dx, double dy) {
     if (dx > orePos.dx &&
@@ -528,8 +553,6 @@ abstract class Entity {
   Entity(this.dx, this.dy);
 
   Entity copy();
-
-  String asItem();
 }
 
 class Table extends Entity {
@@ -537,10 +560,14 @@ class Table extends Entity {
 
   @override
   Table copy() => Table(dx, dy);
+}
+
+class CollectibleWood extends Entity {
+  CollectibleWood(double dx, double dy) : super(dx, dy);
 
   @override
-  String asItem() {
-    return wood;
+  CollectibleWood copy() {
+    return CollectibleWood(dx, dy);
   }
 }
 
@@ -556,11 +583,6 @@ class Robot extends Storer {
 
   @override
   String storedItem(Room room) => wood;
-
-  @override
-  String asItem() {
-    return robot;
-  }
 
   @override
   Robot copy() {
@@ -580,11 +602,6 @@ class Miner extends Storer {
   @override
   Miner copy() {
     return Miner(dx, dy, inv, cooldown);
-  }
-
-  @override
-  String asItem() {
-    return miner;
   }
 }
 
