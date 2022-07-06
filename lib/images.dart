@@ -1,20 +1,19 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Table;
+import 'package:some_app/logic.dart';
+import 'core.dart';
 
 Map<String, MaterialColor> oreColors = {
   "iron": Colors.blue,
-  "stone": Colors.grey,
 };
 
 class OreRenderer extends StatelessWidget {
   const OreRenderer({
     Key? key,
     required this.color,
-    required this.smelted,
     required this.width,
     required this.height,
   }) : super(key: key);
   final MaterialColor color;
-  final bool smelted;
   final double width;
   final double height;
   @override
@@ -23,8 +22,28 @@ class OreRenderer extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: color[smelted ? 600 : 800],
-        borderRadius: BorderRadius.circular(smelted ? 0 : 10),
+        color: color[800],
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+}
+
+class StoneRenderer extends StatelessWidget {
+  const StoneRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey[600],
       ),
     );
   }
@@ -35,111 +54,150 @@ class WoodRenderer extends StatelessWidget {
     Key? key,
     required this.width,
     required this.height,
-    this.placed = false,
   }) : super(key: key);
   final double width;
   final double height;
-  final bool placed;
   @override
   Widget build(BuildContext context) {
-    return placed
-        ? Image.asset(
-            "placed-wood.png",
-            width: width,
-            height: height,
-            fit: BoxFit.cover,
-            filterQuality: FilterQuality.none,
-          )
-        : Image.asset(
-            "wood.png",
-            width: width,
-            height: height,
-            fit: BoxFit.cover,
-            filterQuality: FilterQuality.none,
-          );
-  }
-}
-
-class FurnaceRenderer extends StatelessWidget {
-  const FurnaceRenderer({
-    Key? key,
-    required this.width,
-    required this.height,
-    this.placed = "none",
-  }) : super(key: key);
-  final double width;
-  final double height;
-  final String placed;
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Image.asset(
-          "furnace.png",
-          width: width,
-          height: height,
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.none,
-        ),
-        Positioned(
-          left: 11 / 19 * width,
-          top: 6 / 19 * height,
-          child: ItemRenderer(
-            placed,
-            width: 4 / 19 * width,
-            height: 4 / 19 * height,
-          ),
-        )
-      ],
+    return Image.asset(
+      "wood.png",
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
     );
   }
 }
 
-class ItemRenderer extends StatelessWidget {
-  final String item;
-
-  const ItemRenderer(this.item,
-      {Key? key, required this.width, required this.height})
-      : super(key: key);
+class TableRenderer extends StatelessWidget {
+  const TableRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false,
+  }) : super(key: key);
   final double width;
   final double height;
+  final bool ghost;
   @override
   Widget build(BuildContext context) {
-    if (item.contains(".") && item.substring(0, item.indexOf(".")) == "ore") {
+    return Image.asset(
+      "placed-wood.png",
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    );
+  }
+}
+
+Widget renderItem(String? optionalItem,
+    {required double width, required double height}) {
+  if (optionalItem == null) {
+    return SizedBox(
+      width: width,
+      height: height,
+    );
+  }
+  String item = optionalItem;
+  if (item.contains(".") && item.substring(0, item.indexOf(".")) == "ore") {
+    if (item == stone) {
+      return StoneRenderer(
+        width: width,
+        height: height,
+      );
+    } else {
       return OreRenderer(
-        color: oreColors[item.substring(item.lastIndexOf(".") + 1)]!,
-        smelted:
-            !(item.substring(item.indexOf(".") + 1, item.lastIndexOf(".")) ==
-                "raw"),
+        color: oreColors[item.substring(item.indexOf(".") + 1)]!,
         height: height,
         width: width,
       );
     }
-    if (item.contains(".") && item.substring(0, item.indexOf(".")) == "wood") {
-      return WoodRenderer(
-        placed: item.substring(item.indexOf(".") + 1) == "placed",
-        height: height,
-        width: width,
-      );
-    }
-    if (item == "none") return Container();
-    if (item.startsWith("furnace")) {
-      return FurnaceRenderer(
-        width: width,
-        height: height,
-        placed: 'ore.raw.iron',
-      );
-    }
-    if (item == "robot") {
-      return FurnaceRenderer(
-        width: width,
-        height: height,
-        placed: "wood.raw",
-      );
-    }
-    return Text(
-      "unknown key $item",
-      style: const TextStyle(color: Colors.red),
+  }
+  if (item == wood) {
+    return WoodRenderer(
+      height: height,
+      width: width,
+    );
+  }
+  if (item == robot) {
+    return RobotRenderer(
+      width: width,
+      height: height,
+    );
+  }
+  if (item == miner) {
+    return MinerRenderer(
+      width: width,
+      height: height,
+    );
+  }
+  return Text(
+    "unknown key $item",
+    style: const TextStyle(color: Colors.red),
+  );
+}
+
+Widget renderEntity(Entity entity,
+    {required double width, required double height, bool ghost = false}) {
+  if (entity is Miner) {
+    return MinerRenderer(width: width, height: height, ghost: ghost);
+  }
+  if (entity is Robot) {
+    return RobotRenderer(width: width, height: height, ghost: ghost);
+  }
+  if (entity is Table) {
+    return TableRenderer(width: width, height: height, ghost: ghost);
+  }
+  return Text(
+    "unknown entity $entity",
+    style: const TextStyle(color: Colors.red),
+  );
+}
+
+class RobotRenderer extends StatelessWidget {
+  const RobotRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  final bool ghost;
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      "robot.png",
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    );
+  }
+}
+
+class MinerRenderer extends StatelessWidget {
+  const MinerRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  final bool ghost;
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      "miner.png",
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
     );
   }
 }

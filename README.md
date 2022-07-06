@@ -1,12 +1,20 @@
 # antcraft
 A 2D automation-based work-in-progress open-world game.
 ## Current game
-- A shop to win the game with 100 wood.
 - Iron mines you can get iron from
 - Floor made out of stone you can mine
 - Infinite-sized inventory
-- Wood you can pick up and place and use to craft robots
-- Robots to pick wood up for you
+- Wood:
+  - natural generation: one wood item per room
+  - collection: walking onto a wood item gets you that item
+  - place: '1'
+- Robots:
+  - recipe: iron
+  - place: '2'
+- Miners:
+  - recipe: wood, iron
+  - place: '3'
+- Game is won when you get 100 iron
 ## TODO: (in order)
 - https://github.com/treeplate/antcraft/projects/1?add_cards_query=is%3Aopen
 ## Naming

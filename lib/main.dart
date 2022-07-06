@@ -3,14 +3,13 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Table;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
+import 'core.dart';
 import 'images.dart';
 import 'logic.dart';
-import 'tutorialoverride.dart';
 
 const bool debugMode = false;
 void main() {
@@ -25,6 +24,28 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       home: MyHomePage(),
     );
+  }
+}
+
+enum VerticalDirection { up, down, stay }
+
+enum HorizontalDirection { left, right, stay }
+
+@immutable
+class Direction {
+  final VerticalDirection vertical;
+  final HorizontalDirection horizontal;
+
+  @override
+  int get hashCode => vertical.hashCode ^ horizontal.hashCode;
+
+  const Direction(this.vertical, this.horizontal);
+
+  @override
+  bool operator ==(Object other) {
+    return other is Direction &&
+        vertical == other.vertical &&
+        horizontal == other.horizontal;
   }
 }
 
@@ -48,29 +69,14 @@ class _MyHomePageState extends State<MyHomePage> {
     return world.room;
   }
 
-  String get tutorial {
-    if (tutorialOverride(world) != null) return tutorialOverride(world)!;
-    if (won) return "You Won!";
-    if (world.shopActive) {
-      if ((world.inv['wood.raw'] ?? 0) >= 100) {
-        return "Win the game by buying the 'Win game' item";
-      }
-      return "Remember to get wood before you go to the shop. (press Leave shop)";
-    }
+  static const List<EntityCell> toolbar = [
+    EntityCell(wood, LogicalKeyboardKey.digit1),
+    EntityCell(robot, LogicalKeyboardKey.digit2),
+    EntityCell(miner, LogicalKeyboardKey.digit3)
+  ];
 
-    if (room.shop) {
-      if ((world.inv['wood.raw'] ?? 0) >= 100) {
-        return "Go to the red square (the shop) and press x";
-      }
-    }
-    if ((world.inv['wood.raw'] ?? 0) >= 100) {
-      if (world.tableOpen != null) return "Press the X button";
-      if (world.roomX > 1) return "Go left (press a)";
-      if (world.roomX < 1) return "Go right (press d)";
-      if (world.roomY > 1) return "Go up (press w)";
-      return "Go down (press s)";
-    }
-    return 'XXX';
+  String get tutorial {
+    return '';
   }
 
   bool invActive = false;
@@ -132,21 +138,21 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       });
     }
-    if (event.character == "q") {
-      world.place('wood.raw');
-    }
-    if (event.character == "c") {
-      world.place('robot');
-    }
-    if (event.character == "x") {
-      world.openShop();
-    }
     if (event.character == "f") {
       world.openTable();
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape &&
+        event is RawKeyDownEvent) {
+      world.closeTable();
     }
     if (event.character == "e" && e == false) {
       e = true;
       invActive = !invActive;
+    }
+    for (EntityCell entityCell in toolbar) {
+      if (event.logicalKey == entityCell.keybind && event is RawKeyDownEvent) {
+        world.place(entityCell.item);
+      }
     }
 
     return KeyEventResult.handled;
@@ -154,8 +160,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   String mineFeedback = "";
   Map<int, Map<int, List<Offset>>> totalTables = {};
+  int frames = 0;
   late Timer movement =
       Timer.periodic(const Duration(milliseconds: 1000 ~/ 60), (_) {
+    if ((world.inv[iron] ?? 0) >= 100) {
+      won = true;
+    }
+    if (!won) {
+      frames++;
+    }
     setState(world.tick);
   });
   _MyHomePageState() {
@@ -167,22 +180,80 @@ class _MyHomePageState extends State<MyHomePage> {
     movement.cancel();
   }
 
+  Recipe? selectedRecipe;
+
   @override
   Widget build(BuildContext context) {
-    //debugDumpApp();
     return LayoutBuilder(builder: (context, BoxConstraints constraints) {
       world.screenWidth = constraints.maxWidth / 10;
       world.screenHeight = constraints.maxHeight / 10;
-      return Scaffold(
-        body: Focus(
-          onKey: _handleKeyPress,
-          autofocus: true,
-          child: ScreenFiller(
+      double screenYPart(VerticalDirection dir) {
+        switch (dir) {
+          case VerticalDirection.up:
+            return 0;
+          case VerticalDirection.down:
+            return (world.screenHeight * 10) - 150;
+          case VerticalDirection.stay:
+            return (world.screenHeight * 5) - 30;
+        }
+      }
+
+      double screenXPart(HorizontalDirection dir) {
+        switch (dir) {
+          case HorizontalDirection.left:
+            return 0;
+          case HorizontalDirection.right:
+            return (world.screenWidth * 10);
+          case HorizontalDirection.stay:
+            return (world.screenWidth * 5);
+        }
+      }
+
+      Map<Direction, List<Entity>> farawayMarkers = {};
+      for (MapEntry<IntegerOffset, Entity> entity in world.entities.entries
+          .toList()
+          .where(
+            (element) =>
+                !(element.key.x == world.roomX &&
+                    element.key.y == world.roomY) &&
+                element.value.isNotEmpty,
+          )
+          .expand((element) =>
+              element.value.map((e) => MapEntry(element.key, e)))) {
+        Direction dir = Direction(
+            entity.key.y < world.roomY
+                ? VerticalDirection.up
+                : entity.key.y > world.roomY
+                    ? VerticalDirection.down
+                    : VerticalDirection.stay,
+            entity.key.x < world.roomX
+                ? HorizontalDirection.left
+                : entity.key.x > world.roomX
+                    ? HorizontalDirection.right
+                    : HorizontalDirection.stay);
+        farawayMarkers[dir] ??= [];
+        farawayMarkers[dir]!.add(entity.value);
+      }
+      return FocusScope(
+        onKey: _handleKeyPress,
+        autofocus: true,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Row(
+              children: [
+                Text(
+                  '${world.robots.values.expand((element) => element).length} robots, ${world.miners.values.expand((element) => element).length} miners, ${world.tables.values.expand((element) => element).length} tables',
+                ),
+              ],
+              mainAxisAlignment: MainAxisAlignment.center,
+            ),
+          ),
+          body: ScreenFiller(
             child: Container(
               color: Colors.grey,
               child: Stack(
                 children: [
-                  if (room.ore != "none" && debugMode)
+                  if (room.ore != null && debugMode)
                     Positioned(
                       left: room.orePos.dx * 10,
                       top: room.orePos.dy * 10,
@@ -192,26 +263,20 @@ class _MyHomePageState extends State<MyHomePage> {
                         color: Colors.green,
                       ),
                     ),
-                  if (room.shop)
-                    Positioned(
-                      left: constraints.maxWidth / 2 - 75,
-                      top: constraints.maxHeight / 2 - 75,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        color: Colors.red,
-                      ),
-                    ),
-                  if (room.ore != "none")
+                  if (room.ore != null)
                     Positioned(
                       left: room.orePos.dx * 10,
                       top: room.orePos.dy * 10,
-                      child: ItemRenderer(
+                      child: renderItem(
                         room.ore,
                         width: 150,
                         height: 150,
                       ),
                     ),
+                  Center(
+                      child: Text(won
+                          ? "You Won in $frames frames!"
+                          : "$frames frames and counting")),
                   if (debugMode)
                     Positioned(
                       left: room.logPos.dx * 10,
@@ -225,21 +290,15 @@ class _MyHomePageState extends State<MyHomePage> {
                   Positioned(
                     left: room.logPos.dx * 10,
                     top: room.logPos.dy * 10,
-                    child: const ItemRenderer(
-                      "wood.raw",
-                      width: 30,
-                      height: 30,
-                    ),
+                    child: const WoodRenderer(width: 30, height: 30),
                   ),
-                  for (Offset table in {
-                    for (MapEntry<Offset, Table> x
-                        in world.tablesAt(world.roomX, world.roomY))
-                      x.key: x.value
-                  }.keys) ...[
+                  for (Entity entity in world
+                          .entities[IntegerOffset(world.roomX, world.roomY)] ??
+                      []) ...[
                     if (debugMode)
                       Positioned(
-                        left: table.dx * 10,
-                        top: table.dy * 10,
+                        left: entity.dx * 10,
+                        top: entity.dy * 10,
                         child: Container(
                           color: Colors.green,
                           width: 30,
@@ -247,43 +306,35 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                     Positioned(
-                      left: table.dx * 10,
-                      top: table.dy * 10,
-                      child: const ItemRenderer(
-                        "wood.placed",
+                      left: entity.dx * 10,
+                      top: entity.dy * 10,
+                      child: renderEntity(
+                        entity,
                         width: 30,
                         height: 30,
                       ),
                     ),
                   ],
-                  for (Offset robot in world.robots.entries
-                      .toList()
-                      .where(
-                        (element) =>
-                            element.key.x == world.roomX &&
-                            element.key.y == world.roomY,
-                      )
-                      .map((e) => Offset(e.value.dx, e.value.dy))) ...[
-                    if (debugMode)
-                      Positioned(
-                        left: robot.dx * 10,
-                        top: robot.dy * 10,
-                        child: Container(
-                          color: Colors.green,
-                          width: 30,
-                          height: 30,
-                        ),
-                      ),
+                  for (MapEntry<Direction, List<Entity>> entity
+                      in farawayMarkers.entries)
                     Positioned(
-                      left: robot.dx * 10,
-                      top: robot.dy * 10,
-                      child: const ItemRenderer(
-                        "robot",
-                        width: 30,
-                        height: 30,
+                      left: screenXPart(entity.key.horizontal) -
+                          (entity.key.horizontal == HorizontalDirection.right
+                              ? 30 * entity.value.length
+                              : entity.key.horizontal ==
+                                      HorizontalDirection.left
+                                  ? 0
+                                  : 15 * entity.value.length),
+                      top: screenYPart(entity.key.vertical),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (Entity entity2 in entity.value)
+                            renderEntity(entity2,
+                                width: 30, height: 30, ghost: true),
+                        ],
                       ),
                     ),
-                  ],
                   Positioned(
                     left: world.playerX / .1,
                     top: world.playerY / .1,
@@ -293,31 +344,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       decoration: const BoxDecoration(color: Colors.green),
                     ),
                   ),
-                  for (IntegerOffset robot in world.robots.entries
-                      .toList()
-                      .where(
-                        (element) => !(element.key.x == world.roomX &&
-                            element.key.y == world.roomY),
-                      )
-                      .map((e) => e.key)) ...[
-                    Positioned(
-                      left: robot.x < world.roomX
-                          ? 0
-                          : robot.x > world.roomX
-                              ? (world.screenWidth * 10) - 30
-                              : (world.screenWidth * 5) - 30,
-                      top: robot.y < world.roomY
-                          ? 0
-                          : robot.y > world.roomY
-                              ? (world.screenHeight * 10) - 30
-                              : (world.screenHeight * 5) - 30,
-                      child: const ItemRenderer(
-                        "furnace",
-                        width: 30,
-                        height: 30,
-                      ),
-                    ),
-                  ],
                   Positioned(
                     left: world.playerX / .1,
                     top: world.playerY / .1,
@@ -327,30 +353,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       decoration: const BoxDecoration(color: Colors.green),
                     ),
                   ),
-                  if (world.shopActive)
-                    Center(
-                      child: Container(
-                        color: Colors.lime,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ShopItem(
-                              1000,
-                              () {
-                                won = true;
-                              },
-                              "Win game",
-                              (world.inv["wood.raw"] ?? 0),
-                              (g) => world.inv["wood.raw"] = g,
-                              goldKey: "wood.raw",
-                            ),
-                            TextButton(
-                                onPressed: world.closeShop,
-                                child: const Text("Leave shop")),
-                          ],
-                        ),
-                      ),
-                    ),
                   if (world.tableOpen != null)
                     Center(
                       child: Container(
@@ -360,39 +362,44 @@ class _MyHomePageState extends State<MyHomePage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                TableSlotDropdown(
-                                  inv: world.inv,
-                                  slotKey: SlotKey.x0y0,
-                                  table: world.tableOpen!,
-                                  world: world,
-                                ),
-                                TableSlotDropdown(
-                                  inv: world.inv,
-                                  slotKey: SlotKey.x0y1,
-                                  table: world.tableOpen!,
-                                  world: world,
-                                ),
-                              ],
-                            ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                TableSlotDropdown(
-                                  inv: world.inv,
-                                  slotKey: SlotKey.x1y0,
-                                  table: world.tableOpen!,
-                                  world: world,
-                                ),
-                                TableSlotDropdown(
-                                  inv: world.inv,
-                                  slotKey: SlotKey.x1y1,
-                                  table: world.tableOpen!,
-                                  world: world,
-                                ),
+                                for (int i = 0;
+                                    i < world.recipes.length;
+                                    i++,) ...[
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      for (MapEntry<String, int> item
+                                          in world.recipes[i].recipe.entries)
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            renderItem(item.key,
+                                                width: 30, height: 30),
+                                            Text(
+                                              "${world.inv[item.key] ?? 0}/${item.value}",
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          ],
+                                        ),
+                                      TextButton(
+                                        child: renderItem(
+                                            world.recipes[i].result,
+                                            width: 30,
+                                            height: 30),
+                                        onPressed: () {
+                                          selectedRecipe = world.recipes[i];
+                                        },
+                                      )
+                                    ],
+                                  ),
+                                  const SizedBox(
+                                    height: 20,
+                                  ),
+                                ],
                               ],
                             ),
                             Column(
@@ -400,13 +407,17 @@ class _MyHomePageState extends State<MyHomePage> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 TextButton(
-                                  onPressed: () => world.closeTable(),
-                                  child: const Text("X"),
-                                ),
-                                TextButton(
-                                  onPressed: () => setState(world.craft),
-                                  child: ItemRenderer(
-                                    world.tableOpen!.result,
+                                  onPressed: selectedRecipe == null
+                                      ? null
+                                      : () {
+                                          setState(() {
+                                            if (world.craft(selectedRecipe!)) {
+                                              selectedRecipe = null;
+                                            }
+                                          });
+                                        },
+                                  child: renderItem(
+                                    selectedRecipe?.result,
                                     width: 30,
                                     height: 30,
                                   ),
@@ -433,7 +444,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
-                                      ItemRenderer(
+                                      renderItem(
                                         a,
                                         width: 30,
                                         height: 30,
@@ -457,10 +468,41 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
           ),
+          bottomNavigationBar: Row(
+            children: [
+              for (EntityCell cell in toolbar)
+                TextButton(
+                  child: Column(
+                    children: [
+                      Center(
+                          child: renderItem(cell.item, width: 30, height: 30)),
+                      Text(
+                        "${world.inv[cell.item] ?? 0} x ${world.describePlaced(cell.item)} (shortcut: ${cell.keybind.keyLabel})",
+                      ),
+                    ],
+                    mainAxisSize: MainAxisSize.min,
+                  ),
+                  onPressed: (world.inv[cell.item] ?? 0) == 0
+                      ? null
+                      : () {
+                          world.place(cell.item);
+                        },
+                )
+            ],
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          ),
         ),
       );
     });
   }
+}
+
+class EntityCell {
+  final LogicalKeyboardKey keybind;
+
+  final String item;
+
+  const EntityCell(this.item, this.keybind);
 }
 
 class ItemDropdown extends StatelessWidget {
@@ -472,16 +514,16 @@ class ItemDropdown extends StatelessWidget {
   }) : super(key: key);
 
   final Map<String, int> inv;
-  final String value;
+  final String? value;
   final void Function(String? x) onChanged;
 
   @override
   Widget build(BuildContext context) {
     return DropdownButton(
-      items: (inv.keys.followedBy(const ["none"]))
+      items: (inv.keys.cast<String?>().followedBy(const [null]))
           .map(
-            (String e) => DropdownMenuItem(
-              child: ItemRenderer(
+            (String? e) => DropdownMenuItem(
+              child: renderItem(
                 e,
                 width: 30,
                 height: 30,
@@ -492,78 +534,6 @@ class ItemDropdown extends StatelessWidget {
           .toList(),
       value: value,
       onChanged: onChanged,
-    );
-  }
-}
-
-class TableSlotDropdown extends StatefulWidget {
-  const TableSlotDropdown({
-    Key? key,
-    required this.inv,
-    required this.slotKey,
-    required this.table,
-    required this.world,
-  }) : super(key: key);
-
-  final Map<String, int> inv;
-  final SlotKey slotKey;
-  final Table table;
-  final World world;
-  @override
-  _TableSlotDropdownState createState() => _TableSlotDropdownState();
-}
-
-class _TableSlotDropdownState extends State<TableSlotDropdown> {
-  @override
-  Widget build(BuildContext context) {
-    return ItemDropdown(
-      inv: widget.inv,
-      value: widget.table.grid[widget.slotKey]!,
-      onChanged: (String? value) {
-        setState(() {
-          widget.world.setCraftCorner(widget.slotKey, value!);
-        });
-      },
-    );
-  }
-}
-
-class ShopItem extends StatelessWidget {
-  const ShopItem(this.cost, this.result, this.text, this.gold, this.goldSet,
-      {Key? key, required this.goldKey})
-      : super(key: key);
-  final int cost;
-  final void Function() result;
-  final String text;
-  final int gold;
-  final String goldKey;
-  final void Function(int) goldSet;
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(text),
-        Row(
-          children: [
-            ItemRenderer(
-              goldKey,
-              width: 30,
-              height: 30,
-            ),
-            Text(cost.toString())
-          ],
-        ),
-        TextButton(
-          onPressed: () {
-            if (cost <= gold) {
-              goldSet(gold - cost);
-              result();
-            }
-          },
-          child: const Text("Buy"),
-        ),
-      ],
     );
   }
 }

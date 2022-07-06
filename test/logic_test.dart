@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:some_app/core.dart';
 import 'package:some_app/logic.dart';
 
 void main() {
@@ -59,7 +60,7 @@ void main() {
   });
   testWidgets("Wood collection/placement", (widgetTester) async {
     World world = World(MockRandom());
-    expect(world.inv['wood.raw'], isNull);
+    expect(world.inv[wood], isNull);
     world.tick();
     world.left();
     world.up();
@@ -67,13 +68,13 @@ void main() {
     world.tick();
     world.right();
     world.down();
-    expect(world.inv['wood.raw'], 1);
+    expect(world.inv[wood], 1);
     expect(world.tableOpen, isNull);
-    expect(world.tablesAt(world.roomX, world.roomY), isEmpty);
+    expect(world.tables.values.expand((e) => e), isEmpty);
     world.openTable();
     expect(world.tableOpen, isNull);
-    world.place('table');
-    expect(world.tablesAt(world.roomX, world.roomY), hasLength(1));
+    expect(world.place(wood), true);
+    expect(world.tables.values.expand((e) => e), hasLength(1));
     expect(world.tableOpen, isNull);
     world.openTable();
     expect(world.tableOpen, isNotNull);
@@ -94,7 +95,7 @@ void main() {
   testWidgets("Robot collection/placement", (WidgetTester tester) async {
     World world = World(MockRandom());
     expect(world.robots, isEmpty);
-    expect(world.inv['robot'], isNull);
+    expect(world.inv[robot], isNull);
     world.tick();
     world.left();
     world.up();
@@ -102,16 +103,13 @@ void main() {
     world.tick();
     world.right();
     world.down();
-    world.place('table');
+    expect(world.place(wood), true);
     world.openTable();
     world.mine(() {});
     await tester.pump(const Duration(seconds: 2));
-    expect(world.tableOpen!.result, 'none');
-    world.setCraftCorner(SlotKey.x0y0, iron);
-    expect(world.tableOpen!.result, 'robot');
-    world.craft();
-    expect(world.inv['robot'], 1);
-    world.place('robot');
+    world.craft(world.recipes[0]);
+    expect(world.inv[robot], 1);
+    world.place(robot);
     expect(world.robots, hasLength(1));
   });
   testWidgets("Robot movement/gathering", (WidgetTester tester) async {
@@ -123,17 +121,16 @@ void main() {
     world.tick();
     world.right();
     world.down();
-    world.place('wood.raw');
+    world.place(wood);
     world.openTable();
     world.mine(() {});
     await tester.pump(const Duration(seconds: 2));
-    world.setCraftCorner(SlotKey.x0y0, iron);
-    world.craft();
-    world.place('robot');
-    IntegerOffset robot = world.robots.keys.single;
-    Robot roombot = world.robots.values.single;
-    expect(robot.x, world.roomX);
-    expect(robot.y, world.roomY);
+    world.craft(world.recipes[0]);
+    world.place(robot);
+    IntegerOffset robotPos = world.robots.keys.single;
+    Robot roombot = world.robots.values.single.single;
+    expect(robotPos.x, world.roomX);
+    expect(robotPos.y, world.roomY);
     expect(roombot.dx, world.playerX);
     expect(roombot.dy, world.playerY);
     expect(roombot.inv, 0);
