@@ -8,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import 'core.dart';
+import 'estd.dart';
 import 'images.dart';
 import 'logic.dart';
 
@@ -72,7 +73,8 @@ class _MyHomePageState extends State<MyHomePage> {
   static const List<EntityCell> toolbar = [
     EntityCell(wood, LogicalKeyboardKey.digit1),
     EntityCell(robot, LogicalKeyboardKey.digit2),
-    EntityCell(miner, LogicalKeyboardKey.digit3)
+    EntityCell(miner, LogicalKeyboardKey.digit3),
+    EntityCell(dirt, LogicalKeyboardKey.digit4),
   ];
 
   String get tutorial {
@@ -140,6 +142,12 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     if (event.character == 'f') {
       world.openTable();
+    }
+    if (event.character == 'q') {
+      world.plant();
+    }
+    if (event.character == 'Q') {
+      world.chop();
     }
     if (event.logicalKey == LogicalKeyboardKey.escape &&
         event is RawKeyDownEvent) {
@@ -239,20 +247,31 @@ class _MyHomePageState extends State<MyHomePage> {
         autofocus: true,
         child: Scaffold(
           appBar: AppBar(
-            title: Row(
-              children: [
-                Text(
-                  '${world.robots.values.expand((element) => element).length} robots, ${world.miners.values.expand((element) => element).length} miners, ${world.tables.values.expand((element) => element).length} tables',
-                ),
-              ],
-              mainAxisAlignment: MainAxisAlignment.center,
+            title: Center(
+              child: parseInlinedIcons(
+                group(
+                        world.entities.values.expand((element) => element).toList(),
+                        (Entity entity) => entity.key)
+                    .entries
+                    .map((e) => '${e.value.length}x{entity.${e.key.name}}')
+                    .join(' '),
+              ),
             ),
           ),
           body: ScreenFiller(
             child: Container(
-              color: Colors.grey,
+              color: stoneColor,
               child: Stack(
                 children: [
+                  if (room.baseOre == dirt)
+                    Positioned.fill(
+                      child: Image.asset(
+                        'images/dirt.png',
+                        repeat: ImageRepeat.repeat,
+                        scale: 1 / 3,
+                        filterQuality: FilterQuality.none,
+                      ),
+                    ),
                   if (room.ore != null && debugMode)
                     Positioned(
                       left: room.orePos.dx * 10,
@@ -291,7 +310,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       left: entity.dx * 10,
                       top: entity.dy * 10,
                       child: renderEntity(
-                        entity,
+                        entity.key,
                         width: 30,
                         height: 30,
                       ),
@@ -312,7 +331,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           for (Entity entity2 in entity.value)
-                            renderEntity(entity2,
+                            renderEntity(entity2.key,
                                 width: 30, height: 30, ghost: true),
                         ],
                       ),
@@ -441,28 +460,32 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
           ),
-          bottomNavigationBar: Row(
-            children: [
-              for (EntityCell cell in toolbar)
-                TextButton(
-                  child: Column(
-                    children: [
-                      Center(
-                          child: renderItem(cell.item, width: 30, height: 30)),
-                      parseInlinedIcons(
-                        '${world.inv[cell.item] ?? 0} x ${world.describePlaced(cell.item)} (shortcut: ${cell.keybind.keyLabel})',
-                      ),
-                    ],
-                    mainAxisSize: MainAxisSize.min,
-                  ),
-                  onPressed: (world.inv[cell.item] ?? 0) == 0
-                      ? null
-                      : () {
-                          world.place(cell.item);
-                        },
-                )
-            ],
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          bottomNavigationBar: Container(
+            color: Colors.black,
+            child: Row(
+              children: [
+                for (EntityCell cell in toolbar)
+                  TextButton(
+                    child: Column(
+                      children: [
+                        Center(
+                          child: renderItem(cell.item, width: 30, height: 30),
+                        ),
+                        parseInlinedIcons(
+                          '${world.inv[cell.item] ?? 0} x ${world.describePlaced(cell.item)} (shortcut: ${cell.keybind.keyLabel})',
+                        ),
+                      ],
+                      mainAxisSize: MainAxisSize.min,
+                    ),
+                    onPressed: (world.inv[cell.item] ?? 0) == 0
+                        ? null
+                        : () {
+                            world.place(cell.item);
+                          },
+                  )
+              ],
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            ),
           ),
         ),
       );

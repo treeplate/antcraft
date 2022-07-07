@@ -140,7 +140,7 @@ void main() {
 class MockRandom implements Random {
   @override
   bool nextBool() {
-    throw UnimplementedError();
+    return true;
   }
 
   @override

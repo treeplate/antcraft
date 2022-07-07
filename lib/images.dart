@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart' hide Table;
-import 'package:some_app/logic.dart';
+import 'package:flutter/material.dart';
 import 'core.dart';
 
 Map<String, MaterialColor> oreColors = {
   'iron': Colors.blue,
 };
+
+const Color stoneColor = Color.fromARGB(179, 60, 59, 59);
 
 class OreRenderer extends StatelessWidget {
   const OreRenderer({
@@ -42,8 +43,8 @@ class StoneRenderer extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(
-        color: Colors.grey[600],
+      decoration: const BoxDecoration(
+        color: stoneColor,
       ),
     );
   }
@@ -62,7 +63,7 @@ class WoodRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'wood.png',
+      'images/wood.png',
       width: width,
       height: height,
       fit: BoxFit.cover,
@@ -85,7 +86,7 @@ class TableRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'placed-wood.png',
+      'images/placed-wood.png',
       width: width,
       height: height,
       fit: BoxFit.cover,
@@ -112,7 +113,7 @@ Row parseInlinedIcons(String text) {
       if (rune == 0x7B) {
         result.add(Text(
           buffer.toString(),
-          style: const TextStyle(fontSize: 30),
+          style: const TextStyle(fontSize: 30, color: Colors.white),
         ));
         buffer = StringBuffer();
         parsingKey = true;
@@ -126,7 +127,7 @@ Row parseInlinedIcons(String text) {
   } else {
     result.add(Text(
       buffer.toString(),
-      style: const TextStyle(fontSize: 30),
+      style: const TextStyle(fontSize: 30, color: Colors.white),
     ));
   }
   return Row(
@@ -144,6 +145,14 @@ Widget renderItem(String? optionalItem,
     );
   }
   String item = optionalItem;
+  if (item.contains('.') && item.substring(0, item.indexOf('.')) == 'entity') {
+    return renderEntity(
+      EntityKey.values.singleWhere(
+          (element) => element.name == item.substring(item.indexOf('.') + 1)),
+      height: height,
+      width: width,
+    );
+  }
   if (item.contains('.') && item.substring(0, item.indexOf('.')) == 'ore') {
     if (item == stone) {
       return StoneRenderer(
@@ -176,30 +185,36 @@ Widget renderItem(String? optionalItem,
       height: height,
     );
   }
+  if (item == dirt) {
+    return DirtRenderer(
+      width: width,
+      height: height,
+    );
+  }
   return Text(
     'unknown key $item',
     style: const TextStyle(color: Colors.red),
   );
 }
 
-Widget renderEntity(Entity entity,
+Widget renderEntity(EntityKey entity,
     {required double width, required double height, bool ghost = false}) {
-  if (entity is Miner) {
-    return MinerRenderer(width: width, height: height, ghost: ghost);
+  switch (entity) {
+    case EntityKey.miner:
+      return MinerRenderer(width: width, height: height, ghost: ghost);
+    case EntityKey.dirt:
+      return DirtRenderer(width: width, height: height, ghost: ghost);
+    case EntityKey.robot:
+      return RobotRenderer(width: width, height: height, ghost: ghost);
+    case EntityKey.table:
+      return TableRenderer(width: width, height: height, ghost: ghost);
+    case EntityKey.collectibleWood:
+      return WoodRenderer(width: width, height: height, ghost: ghost);
+    case EntityKey.sapling:
+      return SaplingRenderer(width: width, height: height, ghost: ghost);
+    case EntityKey.tree:
+      return TreeRenderer(width: width, height: height, ghost: ghost);
   }
-  if (entity is Robot) {
-    return RobotRenderer(width: width, height: height, ghost: ghost);
-  }
-  if (entity is Table) {
-    return TableRenderer(width: width, height: height, ghost: ghost);
-  }
-  if (entity is CollectibleWood) {
-    return WoodRenderer(width: width, height: height, ghost: ghost);
-  }
-  return Text(
-    'unknown entity $entity',
-    style: const TextStyle(color: Colors.red),
-  );
 }
 
 class RobotRenderer extends StatelessWidget {
@@ -215,7 +230,7 @@ class RobotRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'robot.png',
+      'images/robot.png',
       width: width,
       height: height,
       fit: BoxFit.cover,
@@ -238,7 +253,76 @@ class MinerRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'miner.png',
+      'images/miner.png',
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    );
+  }
+}
+
+class SaplingRenderer extends StatelessWidget {
+  const SaplingRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  final bool ghost;
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'images/tree-sapling.png',
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    );
+  }
+}
+
+class TreeRenderer extends StatelessWidget {
+  const TreeRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  final bool ghost;
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'images/tree-top.png',
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    );
+  }
+}
+
+class DirtRenderer extends StatelessWidget {
+  const DirtRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  final bool ghost;
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'images/dirt.png',
       width: width,
       height: height,
       fit: BoxFit.cover,
