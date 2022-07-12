@@ -12,7 +12,6 @@ class World {
   int _roomX = 0;
   int _roomY = 0;
   final Map<IntegerOffset, List<Entity>> _entities = {};
-  final List<MapEntry<IntegerOffset, Entity>> _updatedEntities = [];
 
   final List<Recipe> recipes = const [
     Recipe({iron: 1}, robot),
@@ -60,9 +59,12 @@ class World {
   final Random random;
 
   Map<IntegerOffset, Iterable<Entity>> get entities =>
-      _entities.map<IntegerOffset, Iterable<Entity>>((key, value) => MapEntry(
+      _entities.map<IntegerOffset, Iterable<Entity>>(
+        (key, value) => MapEntry(
           key,
-          _entities[IntegerOffset(key.x, key.y)]?.map((e) => e.copy()) ?? {}));
+          _entities[IntegerOffset(key.x, key.y)]?.map((e) => e.copy()) ?? {},
+        ),
+      );
 
   Set<MapEntry<Offset, T>> _atOfType<T extends Entity>(int rx, int ry) {
     return _entities[IntegerOffset(rx, ry)]
@@ -526,7 +528,7 @@ class World {
   }
 
   void plant() {
-    if ((inv[wood] ?? 0) < 1) {
+    if ((inv[wood] ?? 0) < 3) {
       return;
     }
     if (room.baseOre != dirt) {
@@ -541,7 +543,7 @@ class World {
         return;
       }
     }
-    _inv[wood] = _inv[wood]! - 1;
+    _inv[wood] = _inv[wood]! - 3;
     (_entities[IntegerOffset(roomX, roomY)] ??
             (_entities[IntegerOffset(roomX, roomY)] = []))
         .add(Sapling(playerX, playerY, 360));
@@ -551,7 +553,7 @@ class World {
     for (Tree dirt in _atOfType<Tree>(roomX, roomY).map((e) => e.value)) {
       if (colliding(Offset(playerX, playerY), 5, Offset(dirt.dx, dirt.dy), 3)) {
         _entities[IntegerOffset(roomX, roomY)]!.remove(dirt);
-        _inv[wood] = _inv[wood]! + 10;
+        _inv[wood] = _inv[wood]! + 4;
       }
     }
   }
