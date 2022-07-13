@@ -1,12 +1,10 @@
 // ignore_for_file: avoid_print
 
 import 'dart:async';
-import 'dart:isolate';
 import 'dart:math';
 import 'dart:ui';
 
 import 'core.dart';
-import 'packetbuffer.dart';
 
 class World {
   int _roomX = 0;
@@ -353,101 +351,6 @@ class World {
 
   void closeTable() {
     _tableOpen = null;
-  }
-
-  void handlePacket(PacketBuffer buffer, SendPort connection) {
-    if (buffer.available > 0) {
-      int op = buffer.readUint8List(1).single;
-      switch (op) {
-        case 1:
-          up();
-          connection.send([6, 1]);
-          break;
-        case 2:
-          down();
-          connection.send([6, 2]);
-          break;
-        case 3:
-          left();
-          connection.send([6, 3]);
-          break;
-        case 4:
-          right();
-          connection.send([6, 4]);
-          break;
-        case 7:
-          openTable();
-          connection.send([6, 7]);
-          break;
-        case 9:
-          craft(recipes[buffer.readInt64()]);
-          connection.send([6, 9]);
-          break;
-        case 10:
-          closeTable();
-          connection.send([6, 10]);
-          break;
-        case 11:
-          place(robot);
-          connection.send([6, 11]);
-          break;
-        case 12:
-          place(wood);
-          connection.send([6, 12]);
-          break;
-        case 13:
-          mine(() {});
-          connection.send([6, 13]);
-          break;
-        case 14:
-          connection.send([0, playerX, playerY]);
-          break;
-        case 15:
-          connection.send([1, roomX, roomY]);
-          break;
-        case 16:
-          connection.send([
-            2,
-            inv
-                .map((key, value) => MapEntry(itemToNumber(key), value))
-                .entries
-                .map((e) => [e.key, e.value])
-                .expand((element) => element)
-          ]
-              .expand((element) => element is Iterable ? element : [element])
-              .toList());
-          break;
-        case 17:
-          connection.send([
-            3,
-            robots.entries
-                .expand((e) => e.value.map((e2) => MapEntry(e.key, e2)))
-                .map((e) =>
-                    MapEntry([e.key.x, e.key.y], [e.value.dx, e.value.dy]))
-                .map((e) => [e.key, e.value])
-                .expand((element) => element)
-                .expand((element) => element)
-          ]
-              .expand((element) => element is Iterable ? element : [element])
-              .toList());
-          break;
-        case 18:
-          connection.send(
-            [
-              5,
-              room.orePos.dx,
-              room.orePos.dy,
-              itemToNumber(room.ore),
-            ].toList(),
-          );
-          break;
-        default:
-          connection.send([7]);
-      }
-    } else {
-      print('[7] sending');
-      connection.send([7]);
-    }
   }
 
   String? numberToItem(int num) {
