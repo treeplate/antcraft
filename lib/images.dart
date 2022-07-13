@@ -147,7 +147,7 @@ Widget renderItem(String? optionalItem,
   String item = optionalItem;
   if (item.contains('.') && item.substring(0, item.indexOf('.')) == 'entity') {
     return renderEntity(
-      EntityKey.values.singleWhere(
+      EntityType.values.singleWhere(
           (element) => element.name == item.substring(item.indexOf('.') + 1)),
       height: height,
       width: width,
@@ -197,22 +197,22 @@ Widget renderItem(String? optionalItem,
   );
 }
 
-Widget renderEntity(EntityKey entity,
+Widget renderEntity(EntityType entity,
     {required double width, required double height, bool ghost = false}) {
   switch (entity) {
-    case EntityKey.miner:
+    case EntityType.miner:
       return MinerRenderer(width: width, height: height, ghost: ghost);
-    case EntityKey.dirt:
+    case EntityType.dirt:
       return DirtRenderer(width: width, height: height, ghost: ghost);
-    case EntityKey.robot:
+    case EntityType.robot:
       return RobotRenderer(width: width, height: height, ghost: ghost);
-    case EntityKey.table:
+    case EntityType.table:
       return TableRenderer(width: width, height: height, ghost: ghost);
-    case EntityKey.collectibleWood:
+    case EntityType.collectibleWood:
       return WoodRenderer(width: width, height: height, ghost: ghost);
-    case EntityKey.sapling:
+    case EntityType.sapling:
       return SaplingRenderer(width: width, height: height, ghost: ghost);
-    case EntityKey.tree:
+    case EntityType.tree:
       return TreeRenderer(width: width, height: height, ghost: ghost);
   }
 }

@@ -171,7 +171,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int frames = 0;
   late Timer movement =
       Timer.periodic(const Duration(milliseconds: 1000 ~/ 60), (_) {
-    if ((world.inv[iron] ?? 0) >= 100) {
+    if ((world.inv[wood] ?? 0) >= 100) {
       won = true;
     }
     if (!won) {
@@ -251,7 +251,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: parseInlinedIcons(
                 group(
                         world.entities.values.expand((element) => element).toList(),
-                        (Entity entity) => entity.key)
+                        (Entity entity) => entity.type)
                     .entries
                     .map((e) => '${e.value.length}x{entity.${e.key.name}}')
                     .join(' '),
@@ -269,6 +269,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         'images/dirt.png',
                         repeat: ImageRepeat.repeat,
                         scale: 1 / 3,
+                        opacity: const AlwaysStoppedAnimation(.5),
                         filterQuality: FilterQuality.none,
                       ),
                     ),
@@ -310,7 +311,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       left: entity.dx * 10,
                       top: entity.dy * 10,
                       child: renderEntity(
-                        entity.key,
+                        entity.type,
                         width: 30,
                         height: 30,
                       ),
@@ -331,7 +332,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           for (Entity entity2 in entity.value)
-                            renderEntity(entity2.key,
+                            renderEntity(entity2.type,
                                 width: 30, height: 30, ghost: true),
                         ],
                       ),

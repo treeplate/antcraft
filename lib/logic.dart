@@ -604,7 +604,7 @@ abstract class Entity {
   Entity(this.dx, this.dy);
 
   Entity copy();
-  EntityKey get key;
+  EntityType get type;
 }
 
 class Table extends Entity {
@@ -614,7 +614,7 @@ class Table extends Entity {
   Table copy() => Table(dx, dy);
 
   @override
-  EntityKey get key => EntityKey.table;
+  EntityType get type => EntityType.table;
 }
 
 class CollectibleWood extends Entity {
@@ -626,7 +626,7 @@ class CollectibleWood extends Entity {
   }
 
   @override
-  EntityKey get key => EntityKey.collectibleWood;
+  EntityType get type => EntityType.collectibleWood;
 }
 
 class Dirt extends Entity {
@@ -638,7 +638,7 @@ class Dirt extends Entity {
   }
 
   @override
-  EntityKey get key => EntityKey.dirt;
+  EntityType get type => EntityType.dirt;
 }
 
 abstract class Storer extends Entity {
@@ -660,7 +660,7 @@ class Robot extends Storer {
   }
 
   @override
-  EntityKey get key => EntityKey.robot;
+  EntityType get type => EntityType.robot;
 }
 
 class Miner extends Storer {
@@ -678,7 +678,7 @@ class Miner extends Storer {
   }
 
   @override
-  EntityKey get key => EntityKey.miner;
+  EntityType get type => EntityType.miner;
 }
 
 class Sapling extends Entity {
@@ -692,7 +692,7 @@ class Sapling extends Entity {
   }
 
   @override
-  EntityKey get key => EntityKey.sapling;
+  EntityType get type => EntityType.sapling;
 }
 
 class Tree extends Entity {
@@ -704,7 +704,7 @@ class Tree extends Entity {
   }
 
   @override
-  EntityKey get key => EntityKey.tree;
+  EntityType get type => EntityType.tree;
 }
 
 class IntegerOffset {
