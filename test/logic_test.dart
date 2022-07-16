@@ -94,7 +94,7 @@ void main() {
   });
   testWidgets('Robot collection/placement', (WidgetTester tester) async {
     World world = World(MockRandom());
-    expect(world.robots, isEmpty);
+    expect(world.entities, everyElement(isNot(isA<Robot>())));
     expect(world.inv[robot], isNull);
     world.tick();
     world.left();
@@ -110,7 +110,9 @@ void main() {
     world.craft(world.recipes[0]);
     expect(world.inv[robot], 1);
     world.place(robot);
-    expect(world.robots, hasLength(1));
+    expect(
+        world.entities.values.expand((element) => element).whereType<Robot>(),
+        hasLength(1));
   });
   testWidgets('Robot movement/gathering', (WidgetTester tester) async {
     World world = World(MockRandom());
@@ -127,7 +129,12 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     world.craft(world.recipes[0]);
     world.place(robot);
-    IntegerOffset robotPos = world.robots.keys.single;
+    IntegerOffset robotPos = world.entities.entries
+        .expand((element) => element.value.map((e) => MapEntry(element, e)))
+        .where((e) => e.value is Robot)
+        .single
+        .key
+        .key;
     Robot roombot = world.robots.values.single.single;
     expect(robotPos.x, world.roomX);
     expect(robotPos.y, world.roomY);

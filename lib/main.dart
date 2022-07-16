@@ -350,73 +350,49 @@ class _MyHomePageState extends State<MyHomePage> {
                     Center(
                       child: Container(
                         color: Colors.black,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        width: 100,
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                for (int i = 0;
-                                    i < world.recipes.length;
-                                    i++,) ...[
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      for (MapEntry<String, int> item
-                                          in world.recipes[i].recipe.entries)
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            renderItem(item.key,
-                                                width: 30, height: 30),
-                                            Text(
-                                              '${world.inv[item.key] ?? 0}/${item.value}',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                      TextButton(
-                                        child: renderItem(
-                                            world.recipes[i].result,
-                                            width: 30,
-                                            height: 30),
-                                        onPressed: () {
-                                          selectedRecipe = world.recipes[i];
-                                        },
-                                      )
-                                    ],
-                                  ),
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
+                            const Text(
+                              "Crafting",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            const Divider(
+                              color: Colors.white,
+                            ),
+                            for (int i = 0; i < world.recipes.length; i++,) ...[
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  for (MapEntry<String, int> item
+                                      in world.recipes[i].recipe.entries)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        renderItem(item.key,
+                                            width: 30, height: 30),
+                                        Text(
+                                          '${world.inv[item.key] ?? 0}/${item.value}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  TextButton(
+                                    child: renderItem(world.recipes[i].result,
+                                        width: 30, height: 30),
+                                    onPressed: () {
+                                      world.craft(world.recipes[i]);
+                                    },
+                                  )
                                 ],
-                              ],
-                            ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                TextButton(
-                                  onPressed: selectedRecipe == null
-                                      ? null
-                                      : () {
-                                          setState(() {
-                                            if (world.craft(selectedRecipe!)) {
-                                              selectedRecipe = null;
-                                            }
-                                          });
-                                        },
-                                  child: renderItem(
-                                    selectedRecipe?.result,
-                                    width: 30,
-                                    height: 30,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -431,26 +407,35 @@ class _MyHomePageState extends State<MyHomePage> {
                           scrollDirection: Axis.vertical,
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
-                            children: world.inv.keys
-                                .map(
-                                  (a) => Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      renderItem(
-                                        a,
-                                        width: 30,
-                                        height: 30,
-                                      ),
-                                      Text(
-                                        '${world.inv[a]}',
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                      ),
-                                    ],
+                            children: const <Widget>[
+                                  Text(
+                                    "Inventory",
+                                    style: TextStyle(color: Colors.white),
                                   ),
-                                )
-                                .toList(),
+                                  Divider(
+                                    color: Colors.white,
+                                  ),
+                                ] +
+                                world.inv.keys
+                                    .map(
+                                      (a) => Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          renderItem(
+                                            a,
+                                            width: 30,
+                                            height: 30,
+                                          ),
+                                          Text(
+                                            '${world.inv[a]}',
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                    .toList(),
                           ),
                         ),
                       ),

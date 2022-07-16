@@ -9,6 +9,7 @@ import 'core.dart';
 class World {
   int _roomX = 0;
   int _roomY = 0;
+  final Map<IntegerOffset, Map<EntityType, List<Entity>>> _entitiesByType = {};
   final Map<IntegerOffset, List<Entity>> _entities = {};
 
   final List<Recipe> recipes = const [
@@ -32,18 +33,13 @@ class World {
             key, _atOfType<Table>(key.x, key.y).map((e) => e.value.copy())));
   }
 
-  Map<IntegerOffset, Iterable<Robot>> get robots {
-    return _entities.map<IntegerOffset, Iterable<Robot>>((key, value) =>
-        MapEntry(
-            key, _atOfType<Robot>(key.x, key.y).map((e) => e.value.copy())));
-  }
-
   Map<IntegerOffset, Iterable<CollectibleWood>> get woods {
-    return _entities.map<IntegerOffset, Iterable<CollectibleWood>>(
-        (key, value) => MapEntry(
-            key,
-            _atOfType<CollectibleWood>(key.x, key.y)
-                .map((e) => e.value.copy())));
+    return Map.fromEntries(_entities.keys
+        .map<MapEntry<IntegerOffset, Iterable<CollectibleWood>>>((key) =>
+            MapEntry(
+                key,
+                _atOfType<CollectibleWood>(key.x, key.y)
+                    .map((e) => e.value.copy()))));
   }
 
   final Map<String, int> _inv = {};
@@ -473,8 +469,8 @@ class Room {
   String oreAt(double dx, double dy) {
     if (dx > orePos.dx &&
         dy > orePos.dy &&
-        dx < orePos.dx + 30 &&
-        dy < orePos.dy + 30 &&
+        dx < orePos.dx + 15 &&
+        dy < orePos.dy + 15 &&
         ore != null) {
       return ore!;
     } else {
