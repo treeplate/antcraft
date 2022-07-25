@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:some_app/core.dart';
 import 'package:some_app/logic.dart';
@@ -7,139 +8,214 @@ import 'package:some_app/logic.dart';
 void main() {
   testWidgets('Player can move', (WidgetTester tester) async {
     World world = World(MockRandom());
+    Player p = world.newPlayer(
+      KeybindSet(
+        LogicalKeyboardKey.keyW,
+        LogicalKeyboardKey.keyS,
+        LogicalKeyboardKey.keyA,
+        LogicalKeyboardKey.keyD,
+        LogicalKeyboardKey.keyE,
+        LogicalKeyboardKey.keyF,
+        LogicalKeyboardKey.keyQ,
+        LogicalKeyboardKey.keyC,
+        LogicalKeyboardKey.keyV,
+        LogicalKeyboardKey.escape,
+      ),
+    );
     world.tick();
-    expect(world.playerX, 4);
-    expect(world.playerY, 4);
-    expect(world.roomX, -1);
-    expect(world.roomY, -1);
+    expect(p.dx, 4);
+    expect(p.dy, 4);
+    expect(p.room.x, -1);
+    expect(p.room.y, -1);
     world.tick();
-    expect(world.playerX, 4);
-    expect(world.playerY, 4);
-    world.left();
+    expect(p.dx, 4);
+    expect(p.dy, 4);
+    world.left(p);
     world.tick();
-    expect(world.playerX, 3);
-    expect(world.playerY, 4);
+    expect(p.dx, 3);
+    expect(p.dy, 4);
     world.tick();
-    expect(world.playerX, 2);
-    expect(world.playerY, 4);
-    world.right();
+    expect(p.dx, 2);
+    expect(p.dy, 4);
+    world.right(p);
     world.tick();
-    expect(world.playerX, 2);
-    expect(world.playerY, 4);
-    world.right();
+    expect(p.dx, 2);
+    expect(p.dy, 4);
+    world.right(p);
     world.tick();
-    expect(world.playerX, 3);
-    expect(world.playerY, 4);
-    world.tick();
-    world.tick();
-    expect(world.playerX, 1);
-    expect(world.playerY, 4);
-    expect(world.roomX, 0);
-    expect(world.roomY, -1);
-    world.left();
-    world.down();
-    world.tick();
-    expect(world.playerX, 1);
-    expect(world.playerY, 1);
-    expect(world.roomX, 0);
-    expect(world.roomY, 0);
-    world.tick();
-    expect(world.playerX, 1);
-    expect(world.playerY, 2);
-    world.up();
-    world.tick();
-    expect(world.playerX, 1);
-    expect(world.playerY, 2);
-    world.up();
+    expect(p.dx, 3);
+    expect(p.dy, 4);
     world.tick();
     world.tick();
-    expect(world.playerX, 1);
-    expect(world.playerY, 4);
-    expect(world.roomX, 0);
-    expect(world.roomY, -1);
+    expect(p.dx, 1);
+    expect(p.dy, 4);
+    expect(p.room.x, 0);
+    expect(p.room.y, -1);
+    world.left(p);
+    world.down(p);
+    world.tick();
+    expect(p.dx, 1);
+    expect(p.dy, 1);
+    expect(p.room.x, 0);
+    expect(p.room.y, 0);
+    world.tick();
+    expect(p.dx, 1);
+    expect(p.dy, 2);
+    world.up(p);
+    world.tick();
+    expect(p.dx, 1);
+    expect(p.dy, 2);
+    world.up(p);
+    world.tick();
+    world.tick();
+    expect(p.dx, 1);
+    expect(p.dy, 4);
+    expect(p.room.x, 0);
+    expect(p.room.y, -1);
   });
   testWidgets('Wood collection/placement', (widgetTester) async {
     World world = World(MockRandom());
-    expect(world.inv[wood], isNull);
+    Player p = world.newPlayer(
+      KeybindSet(
+        LogicalKeyboardKey.keyW,
+        LogicalKeyboardKey.keyS,
+        LogicalKeyboardKey.keyA,
+        LogicalKeyboardKey.keyD,
+        LogicalKeyboardKey.keyE,
+        LogicalKeyboardKey.keyF,
+        LogicalKeyboardKey.keyQ,
+        LogicalKeyboardKey.keyC,
+        LogicalKeyboardKey.keyV,
+        LogicalKeyboardKey.escape,
+      ),
+    );
+    expect(p.inv[wood], isNull);
     world.tick();
-    world.left();
-    world.up();
+    world.left(p);
+    world.up(p);
     world.tick();
     world.tick();
-    world.right();
-    world.down();
-    expect(world.inv[wood], 1);
-    expect(world.tableOpen, isNull);
-    expect(world.tables.values.expand((e) => e), isEmpty);
-    world.openTable();
-    expect(world.tableOpen, isNull);
-    expect(world.place(wood), true);
-    expect(world.tables.values.expand((e) => e), hasLength(1));
-    expect(world.tableOpen, isNull);
-    world.openTable();
-    expect(world.tableOpen, isNotNull);
+    world.right(p);
+    world.down(p);
+    expect(p.inv[wood], 1);
+    expect(p.tableOpen, isNull);
+    expect(world.entities, everyElement(isNot(isA<Table>())));
+    world.openTable(p);
+    expect(p.tableOpen, isNull);
+    expect(world.place(p, wood), true);
+    expect(
+        world.entities.values.expand((element) => element).whereType<Table>(),
+        hasLength(1));
+    expect(p.tableOpen, isNull);
+    world.openTable(p);
+    expect(p.tableOpen, isNotNull);
   });
   testWidgets('Mining iron', (WidgetTester tester) async {
     World world = World(MockRandom());
+    Player p = world.newPlayer(
+      KeybindSet(
+        LogicalKeyboardKey.keyW,
+        LogicalKeyboardKey.keyS,
+        LogicalKeyboardKey.keyA,
+        LogicalKeyboardKey.keyD,
+        LogicalKeyboardKey.keyE,
+        LogicalKeyboardKey.keyF,
+        LogicalKeyboardKey.keyQ,
+        LogicalKeyboardKey.keyC,
+        LogicalKeyboardKey.keyV,
+        LogicalKeyboardKey.escape,
+      ),
+    );
     world.tick();
-    expect(world.inv[iron], isNull);
+    expect(p.inv[iron], isNull);
     bool mined = false;
-    world.mine(() {
+    world.mine(p, () {
       mined = true;
     });
     await tester.pump(const Duration(seconds: 2));
     expect(mined, true);
-    expect(world.inv[stone], isNull);
-    expect(world.inv[iron], 1);
+    expect(p.inv[stone], isNull);
+    expect(p.inv[iron], 1);
   });
   testWidgets('Robot collection/placement', (WidgetTester tester) async {
     World world = World(MockRandom());
-    expect(world.entities, everyElement(isNot(isA<Robot>())));
-    expect(world.inv[robot], isNull);
+    Player p = world.newPlayer(
+      KeybindSet(
+        LogicalKeyboardKey.keyW,
+        LogicalKeyboardKey.keyS,
+        LogicalKeyboardKey.keyA,
+        LogicalKeyboardKey.keyD,
+        LogicalKeyboardKey.keyE,
+        LogicalKeyboardKey.keyF,
+        LogicalKeyboardKey.keyQ,
+        LogicalKeyboardKey.keyC,
+        LogicalKeyboardKey.keyV,
+        LogicalKeyboardKey.escape,
+      ),
+    );
+    expect(world.entities.entries.map((kv) => kv.value).expand((e) => e), everyElement(isNot(isA<Robot>())));
+    expect(p.inv[robot], isNull);
     world.tick();
-    world.left();
-    world.up();
+    world.left(p);
+    world.up(p);
     world.tick();
     world.tick();
-    world.right();
-    world.down();
-    expect(world.place(wood), true);
-    world.openTable();
-    world.mine(() {});
+    world.right(p);
+    world.down(p);
+    expect(world.place(p, wood), true);
+    world.openTable(p, );
+    world.mine(p, () {});
     await tester.pump(const Duration(seconds: 2));
-    world.craft(world.recipes[0]);
-    expect(world.inv[robot], 1);
-    world.place(robot);
+    world.craft(p, world.recipes[0]);
+    expect(p.inv[robot], 1);
+    world.place(p, robot);
     expect(
         world.entities.values.expand((element) => element).whereType<Robot>(),
         hasLength(1));
   });
   testWidgets('Robot movement/gathering', (WidgetTester tester) async {
     World world = World(MockRandom());
+    Player p = world.newPlayer(
+      KeybindSet(
+        LogicalKeyboardKey.keyW,
+        LogicalKeyboardKey.keyS,
+        LogicalKeyboardKey.keyA,
+        LogicalKeyboardKey.keyD,
+        LogicalKeyboardKey.keyE,
+        LogicalKeyboardKey.keyF,
+        LogicalKeyboardKey.keyQ,
+        LogicalKeyboardKey.keyC,
+        LogicalKeyboardKey.keyV,
+        LogicalKeyboardKey.escape,
+      ),
+    );
     world.tick();
-    world.left();
-    world.up();
+    world.left(p);
+    world.up(p);
     world.tick();
     world.tick();
-    world.right();
-    world.down();
-    world.place(wood);
-    world.openTable();
-    world.mine(() {});
+    world.right(p);
+    world.down(p);
+    world.place(p, wood);
+    world.openTable(p);
+    world.mine(p, () {});
     await tester.pump(const Duration(seconds: 2));
-    world.craft(world.recipes[0]);
-    world.place(robot);
-    IntegerOffset robotPos = world.entities.entries
-        .expand((element) => element.value.map((e) => MapEntry(element, e)))
-        .where((e) => e.value is Robot)
+    world.craft(p, world.recipes[0]);
+    world.place(p, robot);
+    IntegerOffset robotRoom = world.entities.entries
+        .expand((element) => element.value
+            .whereType<Robot>()
+            .map((e) => MapEntry(element.key, e)))
         .single
-        .key
         .key;
-    Robot roombot = world.robots.values.single.single;
-    expect(robotPos.x, world.roomX);
-    expect(robotPos.y, world.roomY);
-    expect(roombot.dx, world.playerX);
-    expect(roombot.dy, world.playerY);
+    Robot roombot = world.entities.values
+        .expand<Entity>((element) => element)
+        .whereType<Robot>()
+        .single;
+    expect(robotRoom.x, p.room.x);
+    expect(robotRoom.y, p.room.y);
+    expect(roombot.dx, p.dx);
+    expect(roombot.dy, p.dy);
     expect(roombot.inv, 0);
   });
 }

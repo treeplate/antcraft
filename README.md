@@ -1,6 +1,6 @@
 # antcraft
 A 2D automation-based work-in-progress open-world game.
-## Current game
+## Current game (outdated)
 - Iron mines you can get iron from
 - Floor made out of stone you can mine
 - Infinite-sized inventory

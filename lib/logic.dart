@@ -1,16 +1,11 @@
-// ignore_for_file: avoid_print
-
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 
+import 'package:flutter/services.dart';
 import 'core.dart';
 
 class World {
-  int _roomX = 0;
-  int _roomY = 0;
   final Map<IntegerOffset, Map<EntityType, List<Entity>>> _entitiesByType = {};
-  final Map<IntegerOffset, List<Entity>> _entities = {};
 
   final List<Recipe> recipes = const [
     Recipe({iron: 1}, robot),
@@ -21,74 +16,68 @@ class World {
   double screenWidth = 10;
   double screenHeight = 10;
   final Map<int, Map<int, Room>> _rooms = {};
-  Table? _tableOpen;
-  Table? get tableOpen => _tableOpen?.copy();
   final List<String> _ores = [iron];
-  int get roomX => _roomX;
-  int get roomY => _roomY;
 
-  Map<IntegerOffset, Iterable<Table>> get tables {
-    return _entities.map<IntegerOffset, Iterable<Table>>((key, value) =>
-        MapEntry(
-            key, _atOfType<Table>(key.x, key.y).map((e) => e.value.copy())));
-  }
-
-  Map<IntegerOffset, Iterable<CollectibleWood>> get woods {
-    return Map.fromEntries(_entities.keys
-        .map<MapEntry<IntegerOffset, Iterable<CollectibleWood>>>((key) =>
-            MapEntry(
-                key,
-                _atOfType<CollectibleWood>(key.x, key.y)
-                    .map((e) => e.value.copy()))));
-  }
-
-  final Map<String, int> _inv = {};
-  Map<String, int> get inv => _inv.map((key, value) => MapEntry(key, value));
   bool _recentMined = false;
-  double playerX = 0;
-  double playerY = 0;
-  double _xVel = 0;
-  double _yVel = 0;
   final int _cooldown = 2;
   final Random random;
 
   Map<IntegerOffset, Iterable<Entity>> get entities =>
-      _entities.map<IntegerOffset, Iterable<Entity>>(
+      _entitiesByType.map<IntegerOffset, Iterable<Entity>>(
         (key, value) => MapEntry(
           key,
-          _entities[IntegerOffset(key.x, key.y)]?.map((e) => e.copy()) ?? {},
+          value.values.expand((element) => element).map((e) => e.copy()),
         ),
       );
 
-  Set<MapEntry<Offset, T>> _atOfType<T extends Entity>(int rx, int ry) {
-    return _entities[IntegerOffset(rx, ry)]
-            ?.whereType<T>()
-            .map((e) => MapEntry(Offset(e.dx, e.dy), e))
+  Set<MapEntry<Offset, Entity>> _atOfType(int rx, int ry, EntityType type) {
+    return _entitiesByType[IntegerOffset(rx, ry)]?[type]
+            ?.map((e) => MapEntry(Offset(e.dx, e.dy), e))
             .toSet() ??
         {};
   }
 
-  void left() {
-    _xVel--;
+  void left(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    player.xVel--;
   }
 
-  void up() {
-    _yVel--;
+  void up(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    player.yVel--;
   }
 
-  void down() {
-    _yVel++;
+  void down(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    player.yVel++;
   }
 
-  void right() {
-    _xVel++;
+  void right(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    player.xVel++;
   }
 
-  void mine(VoidCallback callback) {
+  void mine(Player fakePlayer, VoidCallback callback) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
     if (!_recentMined) {
       _recentMined = true;
-      String ore = room.oreAt(playerX, playerY);
-      _inv[ore] = (inv[ore] ?? 0) + 1;
+      String ore = roomAt(player.room).oreAt(player.dx, player.dy);
+      player.inv[ore] = (player.inv[ore] ?? 0) + 1;
       callback();
       Timer(
         Duration(seconds: _cooldown),
@@ -115,70 +104,106 @@ class World {
     return true;
   }
 
-  void openTable() {
-    for (MapEntry<Offset, Table> table in _atOfType<Table>(roomX, roomY)) {
-      if (colliding(Offset(playerX, playerY), 5, table.key, 3)) {
-        _tableOpen = table.value;
+  void openTable(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    for (MapEntry<Offset, Table> table
+        in _atOfType(player.room.x, player.room.y, EntityType.table).map((e) => MapEntry(e.key, e.value as Table)).cast()) {
+      if (colliding(Offset(player.dx, player.dy), 3, table.key, 3)) {
+        player.tableOpen = table.value;
       }
     }
   }
 
-  bool place(String type) {
-    if ((inv[type] ?? 0) > 0) {
-      _inv[type] = inv[type]! - 1;
+  void invToggle(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    player.invActive  = !player.invActive;
+
+  }
+
+  bool place(Player fakePlayer, String type) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    if ((player.inv[type] ?? 0) > 0) {
+      player.inv[type] = player.inv[type]! - 1;
       _placePrebuilt(
-        IntegerOffset(roomX, roomY),
-        placingTypes[type]!(
-          playerX / 1,
-          playerY / 1,
-        ),
+        placingTypes[type]!(player.dx / 1, player.dy / 1,
+            IntegerOffset(player.room.x, player.room.y), player),
       );
       return true;
     }
     return false;
   }
 
-  void _placePrebuilt(IntegerOffset room, Entity entity) {
-    if (_entities[room] == null) {
-      _entities[room] = [entity];
-    } else {
-      _entities[room]!.add(entity);
-    }
+  void _placePrebuilt(Entity entity) {
+    IntegerOffset room = entity.room;
+    _entitiesByType[room] ??= {};
+    _entitiesByType[room]![entity.type] ??= [];
+    _entitiesByType[room]![entity.type]!.add(entity);
   }
 
   void tick() {
-    playerX += _xVel;
-    playerY += _yVel;
-    if (playerX <= 0) {
-      _roomX--;
-      playerX = (screenWidth - 6).roundToDouble();
-    }
-    if (playerX >= (screenWidth - 5)) {
-      _roomX++;
-      playerX = 1;
-    }
-    if (playerY <= 0) {
-      _roomY--;
-      playerY = (screenHeight - 6).roundToDouble();
-    }
-    if (playerY >= (screenHeight - 5)) {
-      _roomY++;
-      playerY = 1;
-    }
-    for (CollectibleWood pickup
-        in _atOfType<CollectibleWood>(roomX, roomY).map((e) => e.value)) {
-      if (colliding(
-        Offset(playerX, playerY),
-        5,
-        Offset(pickup.dx, pickup.dy),
-        3,
-      )) {
-        assert(_entities[IntegerOffset(roomX, roomY)]!.remove(pickup));
+    for (Player player in _entitiesByType.entries
+        .map(
+            (e) => MapEntry(e.key, e.value.values.expand((element) => element)))
+        .expand((e) => e.value)
+        .where((element) => element.type == EntityType.player)
+        .cast()
+        .toList()) {
+      player.dx += player.xVel;
+      player.dy += player.yVel;
+      if (player.dx <= 0) {
+        _entitiesByType[player.room]![player.type]!.remove(player);
+        player.room = IntegerOffset(player.room.x - 1, player.room.y);
+        _placePrebuilt(player);
+        player.dx = (screenWidth - 4).roundToDouble();
+      }
+      if (player.dx >= (screenWidth - 3)) {
+        _entitiesByType[player.room]![player.type]!.remove(player);
+        player.room = IntegerOffset(player.room.x + 1, player.room.y);
+        _placePrebuilt(player);
+        player.dx = 1;
+      }
+      if (player.dy <= 0) {
+        _entitiesByType[player.room]![player.type]!.remove(player);
+        player.room = IntegerOffset(player.room.x, player.room.y - 1);
+        _placePrebuilt(player);
+        player.dy = (screenHeight - 4).roundToDouble();
+      }
+      if (player.dy >= (screenHeight - 3)) {
+        _entitiesByType[player.room]![player.type]!.remove(player);
+        player.room = IntegerOffset(player.room.x, player.room.y + 1);
+        _placePrebuilt(player);
+        player.dy = 1;
+      }
+      for (CollectibleWood pickup
+          in _atOfType(player.room.x, player.room.y, EntityType.collectibleWood)
+              .map((e) => e.value)
+              .cast().toList()) {
+        if (colliding(
+          Offset(player.dx, player.dy),
+          3,
+          Offset(pickup.dx, pickup.dy),
+          3,
+        )) {
+          assert(_entitiesByType[IntegerOffset(player.room.x, player.room.y)]![
+                  pickup.type]!
+              .remove(pickup));
 
-        _inv[wood] = (inv[wood] ?? 0) + 1;
+          player.inv[wood] = (player.inv[wood] ?? 0) + 1;
+        }
       }
     }
-    for (MapEntry<IntegerOffset, Entity> entity in _entities.entries
+    for (MapEntry<IntegerOffset, Entity> entity in _entitiesByType.entries
+        .map(
+            (e) => MapEntry(e.key, e.value.values.expand((element) => element).toList()))
         .expand((e) => e.value.map((e2) => MapEntry(e.key, e2)))
         .toList()) {
       IntegerOffset entityRoom = entity.key;
@@ -186,8 +211,8 @@ class World {
         Sapling sapling = entity.value as Sapling;
         sapling.growth--;
         if (sapling.growth == 0) {
-          _entities[entityRoom]!.remove(sapling);
-          _entities[entityRoom]!.add(Tree(sapling.dx, sapling.dy));
+          _entitiesByType[entityRoom]![sapling.type]!.remove(sapling);
+          _placePrebuilt(Tree(sapling.dx, sapling.dy, entityRoom, null));
         }
       } else if (entity.value is Storer) {
         Storer storer = entity.value as Storer;
@@ -198,13 +223,19 @@ class World {
           genRoom(entityRoom);
         }
         Room room = _rooms[entityRoom.x]![entityRoom.y]!;
-        if (roomX == entityRoom.x &&
-            roomY == entityRoom.y &&
-            colliding(
-                Offset(playerX, playerY), 5, Offset(storer.dx, storer.dy), 3)) {
-          _inv[storer.storedItem(room)] =
-              (inv[storer.storedItem(room)] ?? 0) + storer.inv;
-          storer.inv = 0;
+        for (Player player in _entitiesByType.entries
+            .map((e) =>
+                MapEntry(e.key, e.value.values.expand((element) => element)))
+            .expand((e) => e.value.map((e2) => MapEntry(e.key, e2)))
+            .cast()) {
+          if (player.room.x == entityRoom.x &&
+              player.room.y == entityRoom.y &&
+              colliding(Offset(player.dx, player.dy), 3,
+                  Offset(storer.dx, storer.dy), 3)) {
+            player.inv[storer.storedItem(room)] =
+                (player.inv[storer.storedItem(room)] ?? 0) + storer.inv;
+            storer.inv = 0;
+          }
         }
 
         if (storer is Miner) {
@@ -218,19 +249,24 @@ class World {
           }
         } else if (storer is Robot) {
           Robot robot = storer;
-          for (CollectibleWood pickup
-              in _atOfType<CollectibleWood>(entityRoom.x, entityRoom.y)
-                  .map((e) => e.value)) {
-            if (robot.inv < 5) {
+          for (CollectibleWood pickup in _atOfType(
+                  entityRoom.x, entityRoom.y, EntityType.collectibleWood)
+              .map((e) => e.value)
+              .cast()) {
+            if (robot.inv < 3) {
               if (colliding(
                 Offset(robot.dx, robot.dy),
                 3,
                 Offset(pickup.dx, pickup.dy),
                 3,
               )) {
-                assert(_entities[entityRoom]!.remove(pickup));
-                assert(robot.storedItem(_rooms[entityRoom.x]![entityRoom.y]!) ==
-                    wood);
+                assert(
+                  _entitiesByType[entityRoom]![pickup.type]!.remove(pickup),
+                );
+                assert(
+                  robot.storedItem(_rooms[entityRoom.x]![entityRoom.y]!) ==
+                      wood,
+                );
                 robot.inv++;
               }
             }
@@ -263,55 +299,73 @@ class World {
             }
           }
 
-          if (robot.inv < 5) {
-            if (woods[entityRoom]?.isEmpty ?? false) {
+          if (robot.inv < 3) {
+            if (_atOfType(
+                    entityRoom.x, entityRoom.y, EntityType.collectibleWood)
+                .isEmpty) {
               IntegerOffset woodRoom = nearestRoomWhere(
                   (Room r, IntegerOffset rPos) =>
-                      woods[rPos]?.isNotEmpty ?? false,
+                      _atOfType(rPos.x, rPos.y, EntityType.collectibleWood)
+                          .isNotEmpty,
                   to: entityRoom);
               honeRoom(woodRoom.x, woodRoom.y);
             } else {
-              hone(woods[entityRoom]!.first.dx, woods[entityRoom]!.first.dy);
+              hone(
+                  _atOfType(entityRoom.x, entityRoom.y,
+                          EntityType.collectibleWood)
+                      .first
+                      .value
+                      .dx,
+                  _atOfType(entityRoom.x, entityRoom.y,
+                          EntityType.collectibleWood)
+                      .first
+                      .value
+                      .dy);
             }
           } else {
-            if (roomX == entityRoom.x && roomY == entityRoom.y) {
+            if (robot.target.room.x == entityRoom.x &&
+                robot.target.room.y == entityRoom.y) {
               hone(
-                playerX,
-                playerY,
+                robot.target.dx,
+                robot.target.dy,
               );
             } else {
-              honeRoom(roomX, roomY);
+              honeRoom(robot.target.room.x, robot.target.room.y);
             }
           }
           if (robot.dx < 0) {
-            _entities[entityRoom]!.remove(robot);
+            assert(_entitiesByType[entityRoom]![robot.type]!.remove(robot));
             _placePrebuilt(
-              IntegerOffset(entityRoom.x - 1, entityRoom.y),
-              robot..dx = screenWidth.roundToDouble() - 1,
+              robot
+                ..dx = screenWidth.roundToDouble() - 1
+                ..room = IntegerOffset(entityRoom.x - 1, entityRoom.y),
             );
             entityRoom = IntegerOffset(entityRoom.x - 1, entityRoom.y);
           }
           if (robot.dx > screenWidth) {
-            _entities[entityRoom]!.remove(robot);
+            assert(_entitiesByType[entityRoom]![robot.type]!.remove(robot));
             _placePrebuilt(
-              IntegerOffset(entityRoom.x + 1, entityRoom.y),
-              robot..dx = 1,
+              robot
+                ..dx = 1
+                ..room = IntegerOffset(entityRoom.x + 1, entityRoom.y),
             );
             entityRoom = IntegerOffset(entityRoom.x + 1, entityRoom.y);
           }
           if (robot.dy < 0) {
-            _entities[entityRoom]!.remove(robot);
+            assert(_entitiesByType[entityRoom]![robot.type]!.remove(robot));
             _placePrebuilt(
-              IntegerOffset(entityRoom.x, entityRoom.y - 1),
-              robot..dy = screenHeight.roundToDouble() - 1,
+              robot
+                ..dy = screenHeight.roundToDouble() - 1
+                ..room = IntegerOffset(entityRoom.x, entityRoom.y - 1),
             );
             entityRoom = IntegerOffset(entityRoom.x, entityRoom.y - 1);
           }
           if (robot.dy > screenHeight) {
-            _entities[entityRoom]!.remove(robot);
+            assert(_entitiesByType[entityRoom]![robot.type]!.remove(robot));
             _placePrebuilt(
-              IntegerOffset(entityRoom.x, entityRoom.y + 1),
-              robot..dy = 1,
+              robot
+                ..dy = 1
+                ..room = IntegerOffset(entityRoom.x, entityRoom.y - 1),
             );
           }
         }
@@ -319,34 +373,42 @@ class World {
     }
   }
 
-  bool craft(Recipe recipe) {
-    if (tableOpen != null) {
+  bool craft(Player fakePlayer, Recipe recipe) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    if (player.tableOpen != null) {
       for (MapEntry<String, int> item in recipe.recipe.entries) {
-        if ((inv[item.key] ?? 0) < item.value) {
+        if ((player.inv[item.key] ?? 0) < item.value) {
           return false;
         }
       }
       for (MapEntry<String, int> item in recipe.recipe.entries) {
-        _inv[item.key] = inv[item.key]! - item.value;
+        player.inv[item.key] = player.inv[item.key]! - item.value;
       }
-      _inv[recipe.result] = (inv[recipe.result] ?? 0) + 1;
+      player.inv[recipe.result] = (player.inv[recipe.result] ?? 0) + 1;
       return true;
     }
     return false;
   }
 
-  Room get room {
-    if (_rooms[roomX] == null) {
-      _rooms[roomX] = {};
+  Room roomAt(IntegerOffset room) {
+    if (_rooms[room.x] == null) {
+      _rooms[room.x] = {};
     }
-    if (_rooms[roomX]![roomY] == null) {
-      genRoom(IntegerOffset(roomX, roomY));
+    if (_rooms[room.x]![room.y] == null) {
+      genRoom(room);
     }
-    return _rooms[roomX]![roomY]!;
+    return _rooms[room.x]![room.y]!;
   }
 
-  void closeTable() {
-    _tableOpen = null;
+  void closeTable(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    player.tableOpen = null;
   }
 
   String? numberToItem(int num) {
@@ -384,8 +446,7 @@ class World {
   }
 
   IntegerOffset nearestRoomWhere(bool Function(Room r, IntegerOffset rPos) test,
-      {IntegerOffset? to}) {
-    to ??= IntegerOffset(roomX, roomY);
+      {required IntegerOffset to}) {
     if (test(_rooms[to.x]![to.y]!, to)) {
       return to;
     }
@@ -418,43 +479,65 @@ class World {
       random.nextBool() ? stone : dirt,
     );
     _placePrebuilt(
-      room,
       CollectibleWood(
-        (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
-        (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
-      ),
+          (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
+          (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
+          room,
+          null),
     );
   }
 
-  void plant() {
-    if ((inv[wood] ?? 0) < 3) {
+  void plant(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    if ((player.inv[wood] ?? 0) < 3) {
       return;
     }
-    if (room.baseOre != dirt) {
+    if (roomAt(player.room).baseOre != dirt) {
       outer:
       {
-        for (Dirt dirt in _atOfType<Dirt>(roomX, roomY).map((e) => e.value)) {
+        for (Dirt dirt
+            in _atOfType(player.room.x, player.room.y, EntityType.dirt)
+                .map((e) => e.value)
+                .cast()) {
           if (colliding(
-              Offset(playerX, playerY), 0, Offset(dirt.dx, dirt.dy), 3)) {
+              Offset(player.dx, player.dy), 0, Offset(dirt.dx, dirt.dy), 3)) {
             break outer;
           }
         }
         return;
       }
     }
-    _inv[wood] = _inv[wood]! - 3;
-    (_entities[IntegerOffset(roomX, roomY)] ??
-            (_entities[IntegerOffset(roomX, roomY)] = []))
-        .add(Sapling(playerX, playerY, 360));
+    player.inv[wood] = player.inv[wood]! - 3;
+    _placePrebuilt(Sapling(player.dx, player.dy, 360,
+        IntegerOffset(player.room.x, player.room.y), null));
   }
 
-  void chop() {
-    for (Tree dirt in _atOfType<Tree>(roomX, roomY).map((e) => e.value)) {
-      if (colliding(Offset(playerX, playerY), 5, Offset(dirt.dx, dirt.dy), 3)) {
-        _entities[IntegerOffset(roomX, roomY)]!.remove(dirt);
-        _inv[wood] = _inv[wood]! + 4;
+  void chop(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    for (Tree tree in _atOfType(player.room.x, player.room.y, EntityType.tree)
+        .map((e) => e.value)
+        .cast().toList()) {
+      if (colliding(
+          Offset(player.dx, player.dy), 3, Offset(tree.dx, tree.dy), 3)) {
+        _entitiesByType[IntegerOffset(player.room.x, player.room.y)]![
+                tree.type]!
+            .remove(tree);
+        player.inv[wood] = player.inv[wood]! + 4;
       }
     }
+  }
+
+  Player newPlayer(KeybindSet keybindSet) {
+    Player player =
+        Player(0, 0, keybindSet, IntegerOffset(0, 0), 0, 0, {}, null, false, null);
+    _placePrebuilt(player);
+    return player;
   }
 }
 
@@ -481,11 +564,12 @@ class Room {
 
 enum SlotKey { x0y0, x0y1, x1y0, x1y1 }
 
-Map<String, Entity Function(double, double)> placingTypes = {
-  wood: (dx, dy) => Table(dx, dy),
-  robot: (dx, dy) => Robot(dx, dy),
-  miner: (dx, dy) => Miner(dx, dy),
-  dirt: (dx, dy) => Dirt(dx, dy)
+Map<String, Entity Function(double, double, IntegerOffset, Positioned)>
+    placingTypes = {
+  wood: (dx, dy, room, target) => Table(dx, dy, room, null),
+  robot: (dx, dy, room, target) => Robot(dx, dy, room, target, null),
+  miner: (dx, dy, room, target) => Miner(dx, dy, room, null),
+  dirt: (dx, dy, room, target) => Dirt(dx, dy, room, null)
 };
 
 class Recipe {
@@ -496,32 +580,35 @@ class Recipe {
   const Recipe(this.recipe, this.result);
 }
 
-abstract class Entity {
-  double dx;
-  double dy;
-
-  Entity(this.dx, this.dy);
+abstract class Entity extends Positioned {
+  Entity(double dx, double dy, IntegerOffset room, int? codeArg)
+      : super(dx, dy, room) {
+    code = codeArg ?? hashCode;
+  }
+  late final int code;
 
   Entity copy();
   EntityType get type;
 }
 
 class Table extends Entity {
-  Table(double dx, double dy) : super(dx, dy);
+  Table(double dx, double dy, IntegerOffset room, int? codeArg)
+      : super(dx, dy, room, codeArg);
 
   @override
-  Table copy() => Table(dx, dy);
+  Table copy() => Table(dx, dy, room, code);
 
   @override
   EntityType get type => EntityType.table;
 }
 
 class CollectibleWood extends Entity {
-  CollectibleWood(double dx, double dy) : super(dx, dy);
+  CollectibleWood(double dx, double dy, IntegerOffset room, int? codeArg)
+      : super(dx, dy, room, codeArg);
 
   @override
   CollectibleWood copy() {
-    return CollectibleWood(dx, dy);
+    return CollectibleWood(dx, dy, room, code);
   }
 
   @override
@@ -529,11 +616,12 @@ class CollectibleWood extends Entity {
 }
 
 class Dirt extends Entity {
-  Dirt(double dx, double dy) : super(dx, dy);
+  Dirt(double dx, double dy, IntegerOffset room, int? codeArg)
+      : super(dx, dy, room, codeArg);
 
   @override
   Dirt copy() {
-    return Dirt(dx, dy);
+    return Dirt(dx, dy, room, code);
   }
 
   @override
@@ -541,30 +629,43 @@ class Dirt extends Entity {
 }
 
 abstract class Storer extends Entity {
-  Storer(double dx, double dy, [this.inv = 0]) : super(dx, dy);
+  Storer(double dx, double dy, IntegerOffset room, int? codeArg, [this.inv = 0])
+      : super(dx, dy, room, codeArg);
   int inv;
 
   String storedItem(Room room);
 }
 
 class Robot extends Storer {
-  Robot(double dx, double dy, [int inv = 0]) : super(dx, dy, inv);
+  Robot(double dx, double dy, IntegerOffset room, this.target, int? codeArg,
+      [int inv = 0])
+      : super(dx, dy, room, codeArg, inv);
 
   @override
   String storedItem(Room room) => wood;
 
+  Positioned target;
+
   @override
   Robot copy() {
-    return Robot(dx, dy, inv);
+    return Robot(dx, dy, room, target, code, inv);
   }
 
   @override
   EntityType get type => EntityType.robot;
 }
 
+class Positioned {
+  double dx;
+  double dy;
+  IntegerOffset room;
+  Positioned(this.dx, this.dy, this.room);
+}
+
 class Miner extends Storer {
-  Miner(double dx, double dy, [int inv = 0, this.cooldown = 1])
-      : super(dx, dy, inv);
+  Miner(double dx, double dy, IntegerOffset room, int? codeArg,
+      [int inv = 0, this.cooldown = 1])
+      : super(dx, dy, room, inv);
 
   int cooldown;
 
@@ -573,7 +674,7 @@ class Miner extends Storer {
 
   @override
   Miner copy() {
-    return Miner(dx, dy, inv, cooldown);
+    return Miner(dx, dy, room, code, inv, cooldown);
   }
 
   @override
@@ -581,13 +682,14 @@ class Miner extends Storer {
 }
 
 class Sapling extends Entity {
-  Sapling(double dx, double dy, this.growth) : super(dx, dy);
+  Sapling(double dx, double dy, this.growth, IntegerOffset room, int? codeArg)
+      : super(dx, dy, room, codeArg);
 
   int growth;
 
   @override
   Sapling copy() {
-    return Sapling(dx, dy, growth);
+    return Sapling(dx, dy, growth, room, code);
   }
 
   @override
@@ -595,15 +697,53 @@ class Sapling extends Entity {
 }
 
 class Tree extends Entity {
-  Tree(double dx, double dy) : super(dx, dy);
+  Tree(double dx, double dy, IntegerOffset room, int? codeArg)
+      : super(dx, dy, room, codeArg);
 
   @override
   Tree copy() {
-    return Tree(dx, dy);
+    return Tree(dx, dy, room, code);
   }
 
   @override
   EntityType get type => EntityType.tree;
+}
+
+class Player extends Entity {
+  Table? tableOpen;
+  bool invActive;
+
+  Player(double dx, double dy, this.keybinds, IntegerOffset room, this.xVel,
+      this.yVel, this.inv, this.tableOpen, this.invActive, int? codeArg)
+      : super(dx, dy, room, codeArg);
+  final KeybindSet keybinds;
+  double xVel;
+  double yVel;
+  final Map<String, int> inv;
+  @override
+  Entity copy() {
+    return Player(dx, dy, keybinds, room, xVel, yVel, Map.of(inv),
+        tableOpen?.copy(), invActive, code);
+  }
+
+  @override
+  EntityType get type => EntityType.player;
+}
+
+class KeybindSet {
+  final LogicalKeyboardKey up; // w
+  final LogicalKeyboardKey down; // a
+  final LogicalKeyboardKey left; // s
+  final LogicalKeyboardKey right; // d
+  final LogicalKeyboardKey inventory; // e
+  final LogicalKeyboardKey openTable; // f
+  final LogicalKeyboardKey closeTable; // esc
+  final LogicalKeyboardKey plant; // q
+  final LogicalKeyboardKey mine; // v
+  final LogicalKeyboardKey placePrefix; // c
+
+  KeybindSet(this.up, this.down, this.left, this.right, this.inventory,
+      this.openTable, this.plant, this.placePrefix, this.mine, this.closeTable);
 }
 
 class IntegerOffset {

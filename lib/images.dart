@@ -198,7 +198,7 @@ Widget renderItem(String? optionalItem,
 }
 
 Widget renderEntity(EntityType entity,
-    {required double width, required double height, bool ghost = false}) {
+    {required double width, required double height, bool ghost = false, bool isMe = false}) {
   switch (entity) {
     case EntityType.miner:
       return MinerRenderer(width: width, height: height, ghost: ghost);
@@ -214,6 +214,30 @@ Widget renderEntity(EntityType entity,
       return SaplingRenderer(width: width, height: height, ghost: ghost);
     case EntityType.tree:
       return TreeRenderer(width: width, height: height, ghost: ghost);
+    case EntityType.player:
+      return PlayerRenderer(width: width, height: height, ghost: ghost, isMe: isMe,);
+  }
+}
+
+class PlayerRenderer extends StatelessWidget {
+  const PlayerRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false, required this.isMe,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  final bool ghost;
+  final bool isMe;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+                      width: 30,
+                      height: 30,
+                      decoration:  BoxDecoration(color: isMe ? ghost ? Colors.red : Colors.green : ghost ? Colors.yellow.withAlpha(128) :Colors.yellow),
+                    );
   }
 }
 
