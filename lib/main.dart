@@ -623,7 +623,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             Center(child: Text(mineFeedback)),
-            Text(tutorial),
+            TextButton(
+              onPressed: () => controlsDialogToggle(player),
+              child: const Text(
+                'Change controls',
+                style: TextStyle(color: Colors.yellow),
+              ),
+            ),
           ],
         ),
       ),
