@@ -74,7 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
         LogicalKeyboardKey.keyQ,
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
-        LogicalKeyboardKey.escape,
+        LogicalKeyboardKey.tab,
       ),
     ),
     world.newPlayer(
@@ -88,7 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
         LogicalKeyboardKey.keyU,
         LogicalKeyboardKey.period,
         LogicalKeyboardKey.slash,
-        LogicalKeyboardKey.f7,
+        LogicalKeyboardKey.keyY,
       ),
     ),
   ];
@@ -100,15 +100,165 @@ class _MyHomePageState extends State<MyHomePage> {
     EntityCell(dirt, LogicalKeyboardKey.digit4),
   ];
 
+  static LogicalKeyboardKey gpu(Player p1) {
+    return p1.keybinds.up;
+  }
+
+  static void spu(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.up = p2;
+  }
+
+  static LogicalKeyboardKey gpd(Player p1) {
+    return p1.keybinds.down;
+  }
+
+  static void spd(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.down = p2;
+  }
+
+  static LogicalKeyboardKey gpl(Player p1) {
+    return p1.keybinds.left;
+  }
+
+  static void spl(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.left = p2;
+  }
+
+  static LogicalKeyboardKey gpr(Player p1) {
+    return p1.keybinds.right;
+  }
+
+  static void spr(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.right = p2;
+  }
+
+  static LogicalKeyboardKey gpi(Player p1) {
+    return p1.keybinds.inventory;
+  }
+
+  static void spi(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.inventory = p2;
+  }
+
+  static LogicalKeyboardKey gpot(Player p1) {
+    return p1.keybinds.openTable;
+  }
+
+  static void spot(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.openTable = p2;
+  }
+
+  static LogicalKeyboardKey getPlayerPlant(Player p1) {
+    return p1.keybinds.plant;
+  }
+
+  static void setPlayerPlant(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.plant = p2;
+  }
+
+  static LogicalKeyboardKey gpm(Player p1) {
+    return p1.keybinds.mine;
+  }
+
+  static void spm(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.mine = p2;
+  }
+
+  static LogicalKeyboardKey getPlayerPlace(Player p1) {
+    return p1.keybinds.placePrefix;
+  }
+
+  static void setPlayerPlace(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.placePrefix = p2;
+  }
+
+  static LogicalKeyboardKey gpoc(Player p1) {
+    return p1.keybinds.openControlsDialog;
+  }
+
+  static void spoc(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.openControlsDialog = p2;
+  }
+
+  static const List<Control> controls = [
+    Control(
+      'Move up',
+      'up',
+      gpu,
+      spu,
+    ),
+    Control(
+      'Move down',
+      'down',
+      gpd,
+      spd,
+    ),
+    Control(
+      'Move left',
+      'left',
+      gpl,
+      spl,
+    ),
+    Control(
+      'Move right',
+      'right',
+      gpr,
+      spr,
+    ),
+    Control(
+      'Toggle inventory',
+      'inventory',
+      gpi,
+      spi,
+    ),
+    Control(
+      'Open/Close {entity.table}',
+      'openTable',
+      gpot,
+      spot,
+    ),
+    Control(
+      'Plant {entity.sapling} / Chop {entity.tree} (add <shift>)',
+      'plant',
+      getPlayerPlant,
+      setPlayerPlant,
+    ),
+    Control(
+      'Mine ore',
+      'mine',
+      gpm,
+      spm,
+    ),
+    Control(
+      'Place something',
+      'placePrefix',
+      getPlayerPlace,
+      setPlayerPlace,
+    ),
+    Control(
+      'Toggle this menu',
+      'openControlsDialog',
+      gpoc,
+      spoc,
+    ),
+  ];
+
+  Control? changingControl;
+  Player? controlChanger;
+
   String get tutorial {
     return '';
   }
 
-  bool invActive = false;
   bool won = false;
 
   Player? placer;
   KeyEventResult _handleKeyPress(FocusNode node, RawKeyEvent event) {
+    if (changingControl != null) {
+      changingControl!.setValue(controlChanger!, event.logicalKey);
+      changingControl = null;
+      controlChanger = null;
+    }
     if (placer != null) {
       for (EntityCell entityCell in toolbar) {
         if (event.logicalKey == entityCell.keybind &&
@@ -168,7 +318,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
       if (event.logicalKey == player.openTable && event is RawKeyDownEvent) {
-        world.openTable(rplayer);
+        world.toggleTable(rplayer);
       }
       if (event.logicalKey == player.plant && event is RawKeyDownEvent) {
         if (event.isShiftPressed) {
@@ -177,18 +327,21 @@ class _MyHomePageState extends State<MyHomePage> {
           world.plant(rplayer);
         }
       }
-      if (event.logicalKey == player.closeTable && event is RawKeyDownEvent) {
-        world.closeTable(rplayer);
-      }
       if (event.logicalKey == player.inventory &&
           event is RawKeyDownEvent &&
           event.repeat == false) {
-        world.invToggle(rplayer);
+        invToggle(rplayer);
       }
       if (event.logicalKey == player.placePrefix &&
           event is RawKeyDownEvent &&
           event.repeat == false) {
         placer = rplayer;
+      }
+      if (event.logicalKey == player.openControlsDialog &&
+          event is RawKeyDownEvent &&
+          event.repeat == false) {
+        pss[rplayer.code]!.controlsDialogActive =
+            !pss[rplayer.code]!.controlsDialogActive;
       }
     }
 
@@ -405,7 +558,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ),
-            if (player.invActive)
+            if (pss[player.code]!.inventoryActive)
               Center(
                 child: Container(
                   width: 300,
@@ -444,6 +597,27 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                               )
                               .toList(),
+                    ),
+                  ),
+                ),
+              ),
+            if (pss[player.code]!.controlsDialogActive)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Container(
+                    color: Colors.black,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 20, top: 20),
+                      child: ListView(
+                        scrollDirection: Axis.vertical,
+                        children: controls
+                            .map((e) => Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: ControlSetting(player, e, s: this),
+                                ))
+                            .toList(),
+                      ),
                     ),
                   ),
                 ),
@@ -523,6 +697,70 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     });
   }
+
+  late final Map<int, PlayerScreenState> pss = Map.fromEntries(
+      players.map((e) => MapEntry(e.code, PlayerScreenState(false, false))));
+
+  void invToggle(Player rplayer) {
+    pss[rplayer.code]!.inventoryActive = !pss[rplayer.code]!.inventoryActive;
+  }
+
+  void controlsDialogToggle(Player rplayer) {
+    pss[rplayer.code]!.controlsDialogActive =
+        !pss[rplayer.code]!.controlsDialogActive;
+  }
+}
+
+class ControlSetting extends StatefulWidget {
+  const ControlSetting(this.p, this.c, {Key? key, required this.s})
+      : super(key: key);
+  final Control c;
+  final Player p;
+  final _MyHomePageState s;
+
+  @override
+  State<ControlSetting> createState() => _ControlSettingState();
+}
+
+class _ControlSettingState extends State<ControlSetting> {
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      parseInlinedIcons(widget.c.readableName),
+      Text(
+        widget.c.internalName,
+        style: const TextStyle(fontSize: 10, color: Colors.grey),
+      ),
+      TextButton(
+        child: parseInlinedIcons(widget.s.changingControl != widget.c ||
+                widget.s.controlChanger?.code != widget.p.code
+            ? widget.c.getValue(widget.p).keyLabel
+            : 'Press any key to change'),
+        onPressed: () {
+          widget.s.changingControl = widget.c;
+          widget.s.controlChanger = widget.p;
+          setState(() {});
+        },
+      ),
+    ]);
+  }
+}
+
+class Control {
+  final String readableName;
+  final String internalName;
+  final LogicalKeyboardKey Function(Player) getValue;
+  final void Function(Player, LogicalKeyboardKey) setValue;
+
+  const Control(
+      this.readableName, this.internalName, this.getValue, this.setValue);
+}
+
+class PlayerScreenState {
+  bool controlsDialogActive;
+  bool inventoryActive;
+
+  PlayerScreenState(this.controlsDialogActive, this.inventoryActive);
 }
 
 class EntityCell {

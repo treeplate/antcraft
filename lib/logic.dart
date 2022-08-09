@@ -104,26 +104,23 @@ class World {
     return true;
   }
 
-  void openTable(Player fakePlayer) {
+  void toggleTable(Player fakePlayer) {
     Player player =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
             .singleWhere((element) => element.value.code == fakePlayer.code)
             .value as Player;
-    for (MapEntry<Offset, Table> table
-        in _atOfType(player.room.x, player.room.y, EntityType.table).map((e) => MapEntry(e.key, e.value as Table)).cast()) {
-      if (colliding(Offset(player.dx, player.dy), 3, table.key, 3)) {
-        player.tableOpen = table.value;
+    if (player.tableOpen == null) {
+      for (MapEntry<Offset, Table> table
+          in _atOfType(player.room.x, player.room.y, EntityType.table)
+              .map((e) => MapEntry(e.key, e.value as Table))
+              .cast()) {
+        if (colliding(Offset(player.dx, player.dy), 3, table.key, 3)) {
+          player.tableOpen = table.value;
+        }
       }
+    } else {
+      player.tableOpen = null;
     }
-  }
-
-  void invToggle(Player fakePlayer) {
-    Player player =
-        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
-            .singleWhere((element) => element.value.code == fakePlayer.code)
-            .value as Player;
-    player.invActive  = !player.invActive;
-
   }
 
   bool place(Player fakePlayer, String type) {
@@ -186,7 +183,8 @@ class World {
       for (CollectibleWood pickup
           in _atOfType(player.room.x, player.room.y, EntityType.collectibleWood)
               .map((e) => e.value)
-              .cast().toList()) {
+              .cast()
+              .toList()) {
         if (colliding(
           Offset(player.dx, player.dy),
           3,
@@ -202,8 +200,8 @@ class World {
       }
     }
     for (MapEntry<IntegerOffset, Entity> entity in _entitiesByType.entries
-        .map(
-            (e) => MapEntry(e.key, e.value.values.expand((element) => element).toList()))
+        .map((e) => MapEntry(
+            e.key, e.value.values.expand((element) => element).toList()))
         .expand((e) => e.value.map((e2) => MapEntry(e.key, e2)))
         .toList()) {
       IntegerOffset entityRoom = entity.key;
@@ -403,14 +401,6 @@ class World {
     return _rooms[room.x]![room.y]!;
   }
 
-  void closeTable(Player fakePlayer) {
-    Player player =
-        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
-            .singleWhere((element) => element.value.code == fakePlayer.code)
-            .value as Player;
-    player.tableOpen = null;
-  }
-
   String? numberToItem(int num) {
     switch (num) {
       case 0:
@@ -522,7 +512,8 @@ class World {
             .value as Player;
     for (Tree tree in _atOfType(player.room.x, player.room.y, EntityType.tree)
         .map((e) => e.value)
-        .cast().toList()) {
+        .cast()
+        .toList()) {
       if (colliding(
           Offset(player.dx, player.dy), 3, Offset(tree.dx, tree.dy), 3)) {
         _entitiesByType[IntegerOffset(player.room.x, player.room.y)]![
@@ -535,7 +526,7 @@ class World {
 
   Player newPlayer(KeybindSet keybindSet) {
     Player player =
-        Player(0, 0, keybindSet, IntegerOffset(0, 0), 0, 0, {}, null, false, null);
+        Player(0, 0, keybindSet, IntegerOffset(0, 0), 0, 0, {}, null, null);
     _placePrebuilt(player);
     return player;
   }
@@ -711,10 +702,9 @@ class Tree extends Entity {
 
 class Player extends Entity {
   Table? tableOpen;
-  bool invActive;
 
   Player(double dx, double dy, this.keybinds, IntegerOffset room, this.xVel,
-      this.yVel, this.inv, this.tableOpen, this.invActive, int? codeArg)
+      this.yVel, this.inv, this.tableOpen, int? codeArg)
       : super(dx, dy, room, codeArg);
   final KeybindSet keybinds;
   double xVel;
@@ -723,7 +713,7 @@ class Player extends Entity {
   @override
   Entity copy() {
     return Player(dx, dy, keybinds, room, xVel, yVel, Map.of(inv),
-        tableOpen?.copy(), invActive, code);
+        tableOpen?.copy(), code);
   }
 
   @override
@@ -731,19 +721,29 @@ class Player extends Entity {
 }
 
 class KeybindSet {
-  final LogicalKeyboardKey up; // w
-  final LogicalKeyboardKey down; // a
-  final LogicalKeyboardKey left; // s
-  final LogicalKeyboardKey right; // d
-  final LogicalKeyboardKey inventory; // e
-  final LogicalKeyboardKey openTable; // f
-  final LogicalKeyboardKey closeTable; // esc
-  final LogicalKeyboardKey plant; // q
-  final LogicalKeyboardKey mine; // v
-  final LogicalKeyboardKey placePrefix; // c
+  LogicalKeyboardKey up; // w
+  LogicalKeyboardKey down; // a
+  LogicalKeyboardKey left; // s
+  LogicalKeyboardKey right; // d
+  LogicalKeyboardKey inventory; // e
+  LogicalKeyboardKey openTable; // f
+  LogicalKeyboardKey plant; // q
+  LogicalKeyboardKey mine; // v
+  LogicalKeyboardKey placePrefix; // c
+  LogicalKeyboardKey openControlsDialog; // <tab>
 
-  KeybindSet(this.up, this.down, this.left, this.right, this.inventory,
-      this.openTable, this.plant, this.placePrefix, this.mine, this.closeTable);
+  KeybindSet(
+    this.up,
+    this.down,
+    this.left,
+    this.right,
+    this.inventory,
+    this.openTable,
+    this.plant,
+    this.placePrefix,
+    this.mine,
+    this.openControlsDialog,
+  );
 }
 
 class IntegerOffset {

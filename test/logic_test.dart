@@ -19,7 +19,7 @@ void main() {
         LogicalKeyboardKey.keyQ,
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
-        LogicalKeyboardKey.escape,
+        LogicalKeyboardKey.keyK,
       ),
     );
     world.tick();
@@ -86,7 +86,7 @@ void main() {
         LogicalKeyboardKey.keyQ,
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
-        LogicalKeyboardKey.escape,
+        LogicalKeyboardKey.keyK,
       ),
     );
     expect(p.inv[wood], isNull);
@@ -100,14 +100,14 @@ void main() {
     expect(p.inv[wood], 1);
     expect(p.tableOpen, isNull);
     expect(world.entities, everyElement(isNot(isA<Table>())));
-    world.openTable(p);
+    world.toggleTable(p);
     expect(p.tableOpen, isNull);
     expect(world.place(p, wood), true);
     expect(
         world.entities.values.expand((element) => element).whereType<Table>(),
         hasLength(1));
     expect(p.tableOpen, isNull);
-    world.openTable(p);
+    world.toggleTable(p);
     expect(p.tableOpen, isNotNull);
   });
   testWidgets('Mining iron', (WidgetTester tester) async {
@@ -123,7 +123,7 @@ void main() {
         LogicalKeyboardKey.keyQ,
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
-        LogicalKeyboardKey.escape,
+        LogicalKeyboardKey.keyK,
       ),
     );
     world.tick();
@@ -150,10 +150,11 @@ void main() {
         LogicalKeyboardKey.keyQ,
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
-        LogicalKeyboardKey.escape,
+        LogicalKeyboardKey.keyK,
       ),
     );
-    expect(world.entities.entries.map((kv) => kv.value).expand((e) => e), everyElement(isNot(isA<Robot>())));
+    expect(world.entities.entries.map((kv) => kv.value).expand((e) => e),
+        everyElement(isNot(isA<Robot>())));
     expect(p.inv[robot], isNull);
     world.tick();
     world.left(p);
@@ -163,7 +164,9 @@ void main() {
     world.right(p);
     world.down(p);
     expect(world.place(p, wood), true);
-    world.openTable(p, );
+    world.toggleTable(
+      p,
+    );
     world.mine(p, () {});
     await tester.pump(const Duration(seconds: 2));
     world.craft(p, world.recipes[0]);
@@ -186,7 +189,7 @@ void main() {
         LogicalKeyboardKey.keyQ,
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
-        LogicalKeyboardKey.escape,
+        LogicalKeyboardKey.keyK,
       ),
     );
     world.tick();
@@ -197,7 +200,7 @@ void main() {
     world.right(p);
     world.down(p);
     world.place(p, wood);
-    world.openTable(p);
+    world.toggleTable(p);
     world.mine(p, () {});
     await tester.pump(const Duration(seconds: 2));
     world.craft(p, world.recipes[0]);
