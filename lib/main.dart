@@ -282,7 +282,6 @@ class _MyHomePageState extends State<MyHomePage> {
         if (event is RawKeyUpEvent) {
           world.down(rplayer);
         }
-        return KeyEventResult.handled;
       }
       if (event.logicalKey == player.down) {
         if (event is RawKeyDownEvent && event.repeat == false) {
@@ -291,7 +290,6 @@ class _MyHomePageState extends State<MyHomePage> {
         if (event is RawKeyUpEvent) {
           world.up(rplayer);
         }
-        return KeyEventResult.handled;
       }
       if (event.logicalKey == player.right) {
         if (event is RawKeyDownEvent && event.repeat == false) {
@@ -300,7 +298,6 @@ class _MyHomePageState extends State<MyHomePage> {
         if (event is RawKeyUpEvent) {
           world.left(rplayer);
         }
-        return KeyEventResult.handled;
       }
       if (event.logicalKey == player.left) {
         if (event is RawKeyDownEvent && event.repeat == false) {
@@ -309,7 +306,6 @@ class _MyHomePageState extends State<MyHomePage> {
         if (event is RawKeyUpEvent) {
           world.right(rplayer);
         }
-        return KeyEventResult.handled;
       }
       if (event.logicalKey == player.mine && event is RawKeyDownEvent) {
         world.mine(rplayer, () {
