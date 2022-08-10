@@ -255,9 +255,12 @@ class _MyHomePageState extends State<MyHomePage> {
   Player? placer;
   KeyEventResult _handleKeyPress(FocusNode node, RawKeyEvent event) {
     if (changingControl != null) {
-      changingControl!.setValue(controlChanger!, event.logicalKey);
-      changingControl = null;
-      controlChanger = null;
+      if (event is RawKeyUpEvent) {
+        changingControl!.setValue(controlChanger!, event.logicalKey);
+        changingControl = null;
+        controlChanger = null;
+      }
+      return KeyEventResult.handled;
     }
     if (placer != null) {
       for (EntityCell entityCell in toolbar) {
