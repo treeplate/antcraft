@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'core.dart';
+import 'cgis_client.dart';
 
 class World {
   final Map<IntegerOffset, Map<EntityType, List<Entity>>> _entitiesByType = {};
@@ -12,7 +13,9 @@ class World {
     Recipe({wood: 1, iron: 1}, miner),
   ];
 
-  World(this.random);
+  bool cgisMenuActive;
+
+  World(this.random, this.cgisMenuActive);
   double screenWidth = 10;
   double screenHeight = 10;
   final Map<int, Map<int, Room>> _rooms = {};
@@ -84,6 +87,20 @@ class World {
         () => _recentMined = false,
       );
     }
+  }
+
+  void registerCGIS(String name, String partner, Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    register(name, partner,
+        () => player.inv.entries.map((e) => ItemStack(e.value, e.key)).toList(),
+        (p0) {
+      (player.inv..clear())
+          .addEntries(p0.map((e) => MapEntry(e.item, e.count)));
+    });
+    cgisMenuActive = false;
   }
 
   bool colliding(Offset aStart, double aSize, Offset bStart, double bSize) {

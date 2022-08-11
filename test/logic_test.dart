@@ -7,7 +7,7 @@ import 'package:some_app/logic.dart';
 
 void main() {
   testWidgets('Player can move', (WidgetTester tester) async {
-    World world = World(MockRandom());
+    World world = World(MockRandom(), false);
     Player p = world.newPlayer(
       KeybindSet(
         LogicalKeyboardKey.keyW,
@@ -74,7 +74,7 @@ void main() {
     expect(p.room.y, -1);
   });
   testWidgets('Wood collection/placement', (widgetTester) async {
-    World world = World(MockRandom());
+    World world = World(MockRandom(), false);
     Player p = world.newPlayer(
       KeybindSet(
         LogicalKeyboardKey.keyW,
@@ -111,7 +111,7 @@ void main() {
     expect(p.tableOpen, isNotNull);
   });
   testWidgets('Mining iron', (WidgetTester tester) async {
-    World world = World(MockRandom());
+    World world = World(MockRandom(), false);
     Player p = world.newPlayer(
       KeybindSet(
         LogicalKeyboardKey.keyW,
@@ -138,7 +138,7 @@ void main() {
     expect(p.inv[iron], 1);
   });
   testWidgets('Robot collection/placement', (WidgetTester tester) async {
-    World world = World(MockRandom());
+    World world = World(MockRandom(), false);
     Player p = world.newPlayer(
       KeybindSet(
         LogicalKeyboardKey.keyW,
@@ -177,7 +177,7 @@ void main() {
         hasLength(1));
   });
   testWidgets('Robot movement/gathering', (WidgetTester tester) async {
-    World world = World(MockRandom());
+    World world = World(MockRandom(), false);
     Player p = world.newPlayer(
       KeybindSet(
         LogicalKeyboardKey.keyW,

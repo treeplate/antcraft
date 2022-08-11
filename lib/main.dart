@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart' hide Table, Positioned;
@@ -20,14 +21,50 @@ void main() {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool cgisDefined = false;
+
+  late final bool cgisOn;
+
+  @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: MyHomePage(),
-    );
+    return cgisDefined
+        ? MaterialApp(
+            home: MyHomePage(
+              cgisOn: cgisOn,
+            ),
+          )
+        : MaterialApp(
+            home: Column(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      cgisDefined = true;
+                      cgisOn = false;
+                    });
+                  },
+                  child: const Text('CGIS Off'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      cgisDefined = true;
+                      cgisOn = true;
+                    });
+                  },
+                  child: const Text('CGIS On'),
+                ),
+              ],
+            ),
+          );
   }
 }
 
@@ -54,14 +91,78 @@ class Direction {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key}) : super(key: key);
+  final bool cgisOn;
+
+  const MyHomePage({Key? key, required this.cgisOn}) : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late final World world = World(Random());
+  TextEditingController cA =
+      TextEditingController(text: Platform.localHostname);
+  TextEditingController cB = TextEditingController(text: 'partner');
+
+  late final World world = World(Random(), widget.cgisOn);
+
+  @override
+  void initState() {
+    scheduleMicrotask(() {
+      if (world.cgisMenuActive) {
+        showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return Dialog(
+                child: Container(
+                  color: Colors.black,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 20, top: 20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          "CGIS Config",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        TextField(
+                          controller: cA,
+                          onChanged: (x) {
+                            cgisName = x;
+                          },
+                          decoration: const InputDecoration(
+                            labelText: 'name',
+                          ),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        TextField(
+                          controller: cB,
+                          onChanged: (x) {
+                            cgisPartner = x;
+                          },
+                          decoration: const InputDecoration(
+                            labelText: 'partner',
+                          ),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            world.registerCGIS(
+                                cgisName, cgisPartner, players.first);
+                          },
+                          child: const Text('Submit'),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            });
+      }
+    });
+    super.initState();
+  }
+
   late final List<Player> players = [
     world.newPlayer(
       KeybindSet(
@@ -99,6 +200,9 @@ class _MyHomePageState extends State<MyHomePage> {
     EntityCell(miner, LogicalKeyboardKey.digit3),
     EntityCell(dirt, LogicalKeyboardKey.digit4),
   ];
+
+  String cgisName = 'default';
+  String cgisPartner = 'default2';
 
   static LogicalKeyboardKey gpu(Player p1) {
     return p1.keybinds.up;
@@ -253,9 +357,9 @@ class _MyHomePageState extends State<MyHomePage> {
   bool won = false;
 
   Player? placer;
-  KeyEventResult _handleKeyPress(FocusNode node, RawKeyEvent event) {
+  KeyEventResult _handleKeyPress(FocusNode node, KeyEvent event) {
     if (changingControl != null) {
-      if (event is RawKeyUpEvent) {
+      if (event is KeyUpEvent) {
         changingControl!.setValue(controlChanger!, event.logicalKey);
         changingControl = null;
         controlChanger = null;
@@ -264,8 +368,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     if (placer != null) {
       for (EntityCell entityCell in toolbar) {
-        if (event.logicalKey == entityCell.keybind &&
-            event is RawKeyDownEvent) {
+        if (event.logicalKey == entityCell.keybind && event is KeyDownEvent) {
           world.place(placer!, entityCell.item);
         }
       }
@@ -276,38 +379,38 @@ class _MyHomePageState extends State<MyHomePage> {
         .toList()) {
       KeybindSet player = rplayer.keybinds;
       if (event.logicalKey == player.up) {
-        if (event is RawKeyDownEvent && event.repeat == false) {
+        if (event is KeyDownEvent) {
           world.up(rplayer);
         }
-        if (event is RawKeyUpEvent) {
+        if (event is KeyUpEvent) {
           world.down(rplayer);
         }
       }
       if (event.logicalKey == player.down) {
-        if (event is RawKeyDownEvent && event.repeat == false) {
+        if (event is KeyDownEvent) {
           world.down(rplayer);
         }
-        if (event is RawKeyUpEvent) {
+        if (event is KeyUpEvent) {
           world.up(rplayer);
         }
       }
       if (event.logicalKey == player.right) {
-        if (event is RawKeyDownEvent && event.repeat == false) {
+        if (event is KeyDownEvent) {
           world.right(rplayer);
         }
-        if (event is RawKeyUpEvent) {
+        if (event is KeyUpEvent) {
           world.left(rplayer);
         }
       }
       if (event.logicalKey == player.left) {
-        if (event is RawKeyDownEvent && event.repeat == false) {
+        if (event is KeyDownEvent) {
           world.left(rplayer);
         }
-        if (event is RawKeyUpEvent) {
+        if (event is KeyUpEvent) {
           world.right(rplayer);
         }
       }
-      if (event.logicalKey == player.mine && event is RawKeyDownEvent) {
+      if (event.logicalKey == player.mine && event is KeyDownEvent) {
         world.mine(rplayer, () {
           mineFeedback = '+1';
           Timer(
@@ -316,29 +419,25 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         });
       }
-      if (event.logicalKey == player.openTable && event is RawKeyDownEvent) {
+      if (event.logicalKey == player.openTable && event is KeyDownEvent) {
         world.toggleTable(rplayer);
       }
-      if (event.logicalKey == player.plant && event is RawKeyDownEvent) {
-        if (event.isShiftPressed) {
+      if (event.logicalKey == player.plant && event is KeyDownEvent) {
+        if (ServicesBinding.instance.keyboard.logicalKeysPressed
+            .contains(LogicalKeyboardKey.shift)) {
           world.chop(rplayer);
         } else {
           world.plant(rplayer);
         }
       }
-      if (event.logicalKey == player.inventory &&
-          event is RawKeyDownEvent &&
-          event.repeat == false) {
+      if (event.logicalKey == player.inventory && event is KeyDownEvent) {
         invToggle(rplayer);
       }
-      if (event.logicalKey == player.placePrefix &&
-          event is RawKeyDownEvent &&
-          event.repeat == false) {
+      if (event.logicalKey == player.placePrefix && event is KeyDownEvent) {
         placer = rplayer;
       }
       if (event.logicalKey == player.openControlsDialog &&
-          event is RawKeyDownEvent &&
-          event.repeat == false) {
+          event is KeyDownEvent) {
         pss[rplayer.code]!.controlsDialogActive =
             !pss[rplayer.code]!.controlsDialogActive;
       }
@@ -637,11 +736,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, BoxConstraints constraints) {
+    return LayoutBuilder(builder: (conext, BoxConstraints constraints) {
       world.screenWidth = constraints.maxWidth / (10 * players.length);
       world.screenHeight = constraints.maxHeight / 10;
-      return FocusScope(
-        onKey: _handleKeyPress,
+      return Focus(
+        onKeyEvent: _handleKeyPress,
         autofocus: true,
         child: Scaffold(
           appBar: AppBar(
