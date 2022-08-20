@@ -20,7 +20,7 @@ void register(String name, String partner, List<ItemStack> Function() oldInv,
   s.add('register$name');
   s.forEach((element) {
     if (element == 'swap') {
-      s.add('$partner:a:${oldInv().join(',')}');
+      s.add('sendover$partner:a:${oldInv().join(',')}');
     }
     if (element.startsWith('converted')) {
       List<String> parts = element.split(':');
