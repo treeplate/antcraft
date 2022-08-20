@@ -424,7 +424,9 @@ class _MyHomePageState extends State<MyHomePage> {
       }
       if (event.logicalKey == player.plant && event is KeyDownEvent) {
         if (ServicesBinding.instance.keyboard.logicalKeysPressed
-            .contains(LogicalKeyboardKey.shift)) {
+                .contains(LogicalKeyboardKey.shiftLeft) ||
+            ServicesBinding.instance.keyboard.logicalKeysPressed
+                .contains(LogicalKeyboardKey.shiftRight)) {
           world.chop(rplayer);
         } else {
           world.plant(rplayer);
