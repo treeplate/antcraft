@@ -28,43 +28,72 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
+enum MenuState { p1, p2, ready }
+
 class _MyAppState extends State<MyApp> {
-  bool cgisDefined = false;
+  MenuState menuState = MenuState.p1;
 
   late final bool cgisOn;
+  late final bool multiplayer;
 
   @override
   Widget build(BuildContext context) {
-    return cgisDefined
-        ? MaterialApp(
-            home: MyHomePage(
-              cgisOn: cgisOn,
-            ),
-          )
-        : MaterialApp(
-            home: Column(
-              children: [
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      cgisDefined = true;
-                      cgisOn = false;
-                    });
-                  },
-                  child: const Text('CGIS Off'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      cgisDefined = true;
-                      cgisOn = true;
-                    });
-                  },
-                  child: const Text('CGIS On'),
-                ),
-              ],
-            ),
-          );
+    switch (menuState) {
+      case MenuState.ready:
+        return MaterialApp(
+          home: MyHomePage(cgisOn: cgisOn, multiplayer: multiplayer),
+        );
+      case MenuState.p1:
+        return MaterialApp(
+          home: Column(
+            children: [
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    menuState = MenuState.p2;
+                    cgisOn = false;
+                  });
+                },
+                child: const Text('CGIS Off'),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    menuState = MenuState.p2;
+                    cgisOn = true;
+                  });
+                },
+                child: const Text('CGIS On'),
+              ),
+            ],
+          ),
+        );
+      case MenuState.p2:
+        return MaterialApp(
+          home: Column(
+            children: [
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    menuState = MenuState.ready;
+                    multiplayer = true;
+                  });
+                },
+                child: const Text('2 Player (local splitscreen)'),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    menuState = MenuState.ready;
+                    multiplayer = false;
+                  });
+                },
+                child: const Text('Singleplayer'),
+              ),
+            ],
+          ),
+        );
+    }
   }
 }
 
@@ -92,8 +121,10 @@ class Direction {
 
 class MyHomePage extends StatefulWidget {
   final bool cgisOn;
+  final bool multiplayer;
 
-  const MyHomePage({Key? key, required this.cgisOn}) : super(key: key);
+  const MyHomePage({Key? key, required this.cgisOn, required this.multiplayer})
+      : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -178,20 +209,21 @@ class _MyHomePageState extends State<MyHomePage> {
         LogicalKeyboardKey.tab,
       ),
     ),
-    world.newPlayer(
-      KeybindSet(
-        LogicalKeyboardKey.keyI,
-        LogicalKeyboardKey.keyK,
-        LogicalKeyboardKey.keyJ,
-        LogicalKeyboardKey.keyL,
-        LogicalKeyboardKey.keyO,
-        LogicalKeyboardKey.semicolon,
-        LogicalKeyboardKey.keyU,
-        LogicalKeyboardKey.period,
-        LogicalKeyboardKey.slash,
-        LogicalKeyboardKey.keyY,
+    if (widget.multiplayer)
+      world.newPlayer(
+        KeybindSet(
+          LogicalKeyboardKey.keyI,
+          LogicalKeyboardKey.keyK,
+          LogicalKeyboardKey.keyJ,
+          LogicalKeyboardKey.keyL,
+          LogicalKeyboardKey.keyO,
+          LogicalKeyboardKey.semicolon,
+          LogicalKeyboardKey.keyU,
+          LogicalKeyboardKey.period,
+          LogicalKeyboardKey.slash,
+          LogicalKeyboardKey.keyY,
+        ),
       ),
-    ),
   ];
 
   static const List<EntityCell> toolbar = [
