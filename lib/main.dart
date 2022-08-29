@@ -207,6 +207,7 @@ class _MyHomePageState extends State<MyHomePage> {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.tab,
+        LogicalKeyboardKey.escape,
       ),
     ),
     if (widget.multiplayer)
@@ -222,6 +223,7 @@ class _MyHomePageState extends State<MyHomePage> {
           LogicalKeyboardKey.period,
           LogicalKeyboardKey.slash,
           LogicalKeyboardKey.keyY,
+          LogicalKeyboardKey.f5,
         ),
       ),
   ];
@@ -316,6 +318,14 @@ class _MyHomePageState extends State<MyHomePage> {
     p1.keybinds.openControlsDialog = p2;
   }
 
+  static LogicalKeyboardKey gpc(Player p1) {
+    return p1.keybinds.closeMenu;
+  }
+
+  static void spc(Player p1, LogicalKeyboardKey p2) {
+    p1.keybinds.closeMenu = p2;
+  }
+
   static const List<Control> controls = [
     Control(
       'Move up',
@@ -377,6 +387,54 @@ class _MyHomePageState extends State<MyHomePage> {
       gpoc,
       spoc,
     ),
+    Control(
+      'Close any menu',
+      'closeMenu',
+      gpc,
+      spc,
+    ),
+  ];
+  final Advancement collectWoodAdv = Advancement(
+    'First Steps',
+    'Collect your first {$wood} (press the open/close inventory key [typically \'e\'] to see it there).',
+  );
+  final Advancement placeAdv = Advancement(
+    'Ready to Craft',
+    'Place an item (Press the place key [typically \'c\'], then press 1 to place your {$wood} [or 2,3,4 if you have the right item in your inventory]).',
+  );
+  final Advancement mineAdv = Advancement(
+    'Diggy Diggy',
+    'Mine (typically the \'v\' key). You get what\'s under you.',
+  );
+  final Advancement craftAdv = Advancement(
+    'Cool Machine',
+    'Craft an item (Press the open/close {entity.table} key [typically \'f\'] and click on one of the recipes if you have enough items for it).',
+  );
+  final Advancement collectStoredAdv = Advancement(
+    'Even Cooler',
+    'Walk on top of a {entity.robot} or {entity.miner} that has mined (which it does every second) / collected {$wood}. This gives you those materials.',
+  );
+  final Advancement plantAdv = Advancement(
+    'Terraforming',
+    'Plant a {entity.sapling} (typically the \'q\' key). You must plant on a {$dirt} floor or on a {entity.dirt} you placed down. This costs 3 {$wood}.',
+  );
+  final Advancement chopAdv = Advancement(
+    'Logging',
+    'Chop down a {entity.tree} (using the mine key). You get 4 {$wood} for that.',
+  );
+  final Advancement getEveryItemAdv = Advancement(
+    'The Ultimate Challenge',
+    'Have every item in the game (there are 6 in total: {$wood} {$stone} {$dirt} {$iron} {$robot} {$miner}).',
+  );
+  late final List<Advancement> advancements = [
+    collectWoodAdv,
+    placeAdv,
+    mineAdv,
+    craftAdv,
+    collectStoredAdv,
+    plantAdv,
+    chopAdv,
+    getEveryItemAdv,
   ];
 
   Control? changingControl;
@@ -401,7 +459,9 @@ class _MyHomePageState extends State<MyHomePage> {
     if (placer != null) {
       for (EntityCell entityCell in toolbar) {
         if (event.logicalKey == entityCell.keybind && event is KeyDownEvent) {
-          world.place(placer!, entityCell.item);
+          if (world.place(placer!, entityCell.item)) {
+            pss[placer!.code]!.advancementsAcheived.add(placeAdv);
+          }
         }
       }
     }
@@ -443,25 +503,24 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }
       if (event.logicalKey == player.mine && event is KeyDownEvent) {
+        if (world.chop(rplayer)) {
+          pss[rplayer.code]!.advancementsAcheived.add(chopAdv);
+        }
         world.mine(rplayer, () {
           mineFeedback = '+1';
           Timer(
             const Duration(milliseconds: 500),
             () => setState(() => mineFeedback = ''),
           );
+          pss[rplayer.code]!.advancementsAcheived.add(mineAdv);
         });
       }
       if (event.logicalKey == player.openTable && event is KeyDownEvent) {
         world.toggleTable(rplayer);
       }
       if (event.logicalKey == player.plant && event is KeyDownEvent) {
-        if (ServicesBinding.instance.keyboard.logicalKeysPressed
-                .contains(LogicalKeyboardKey.shiftLeft) ||
-            ServicesBinding.instance.keyboard.logicalKeysPressed
-                .contains(LogicalKeyboardKey.shiftRight)) {
-          world.chop(rplayer);
-        } else {
-          world.plant(rplayer);
+        if (world.plant(rplayer)) {
+          pss[rplayer.code]!.advancementsAcheived.add(plantAdv);
         }
       }
       if (event.logicalKey == player.inventory && event is KeyDownEvent) {
@@ -474,6 +533,12 @@ class _MyHomePageState extends State<MyHomePage> {
           event is KeyDownEvent) {
         pss[rplayer.code]!.controlsDialogActive =
             !pss[rplayer.code]!.controlsDialogActive;
+      }
+      if (event.logicalKey == player.closeMenu && event is KeyDownEvent) {
+        pss[rplayer.code]!.controlsDialogActive = false;
+        pss[rplayer.code]!.advancementsDialogActive = false;
+        pss[rplayer.code]!.inventoryActive = false;
+        world.toggleTable(rplayer);
       }
     }
 
@@ -488,7 +553,16 @@ class _MyHomePageState extends State<MyHomePage> {
     for (Player player in world.entities.values
         .expand((element) => element)
         .whereType<Player>()) {
-      if ((player.inv[wood] ?? 0) >= 100) {
+      if (player.hasItem(wood, 1)) {
+        pss[player.code]!.advancementsAcheived.add(collectWoodAdv);
+      }
+      if (player.inv.map((e) => e.item).toSet().length == 6) {
+        pss[player.code]!.advancementsAcheived.add(getEveryItemAdv);
+      }
+      if (player.collectedStored) {
+        pss[player.code]!.advancementsAcheived.add(collectStoredAdv);
+      }
+      if (player.hasItem(wood, 100)) {
         won = true;
       }
     }
@@ -666,7 +740,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 children: [
                                   renderItem(item.key, width: 30, height: 30),
                                   Text(
-                                    '${player.inv[item.key] ?? 0}/${item.value}',
+                                    '${player.inv.where((element) => element.item == item.key).fold<int>(0, (p, n) => p + n.count)}/${item.value}',
                                     style: const TextStyle(
                                       color: Colors.white,
                                     ),
@@ -678,6 +752,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                   width: 30, height: 30),
                               onPressed: () {
                                 world.craft(player, world.recipes[i]);
+                                pss[player.code]!
+                                    .advancementsAcheived
+                                    .add(craftAdv);
                               },
                             )
                           ],
@@ -692,45 +769,8 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             if (pss[player.code]!.inventoryActive)
               Center(
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  color: Colors.black,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: const <Widget>[
-                            Text(
-                              "Inventory",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            Divider(
-                              color: Colors.white,
-                            ),
-                          ] +
-                          player.inv.keys
-                              .map(
-                                (a) => Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    renderItem(
-                                      a,
-                                      width: 30,
-                                      height: 30,
-                                    ),
-                                    Text(
-                                      '${player.inv[a]}',
-                                      style:
-                                          const TextStyle(color: Colors.white),
-                                    ),
-                                  ],
-                                ),
-                              )
-                              .toList(),
-                    ),
-                  ),
+                child: InventoryWidget(
+                  inventory: player.inv,
                 ),
               ),
             if (pss[player.code]!.controlsDialogActive)
@@ -754,13 +794,49 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ),
-            Center(child: Text(mineFeedback)),
-            TextButton(
-              onPressed: () => controlsDialogToggle(player),
-              child: const Text(
-                'Change controls',
-                style: TextStyle(color: Colors.yellow),
+            if (pss[player.code]!.advancementsDialogActive)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Container(
+                    color: Colors.black,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 20, top: 20),
+                      child: ListView(
+                        scrollDirection: Axis.vertical,
+                        children: advancements
+                            .map((e) => Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: AdvancementDisplay(
+                                      pss[player.code]!
+                                          .advancementsAcheived
+                                          .contains(e),
+                                      e),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ),
+                ),
               ),
+            Center(child: Text(mineFeedback)),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => controlsDialogToggle(player),
+                  child: const Text(
+                    'Change controls',
+                    style: TextStyle(color: Colors.yellow),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => advancementsDialogToggle(player),
+                  child: const Text(
+                    'Show advancements',
+                    style: TextStyle(color: Colors.yellow),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -818,7 +894,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       ],
                       mainAxisSize: MainAxisSize.min,
                     ),
-                    onPressed: (placer?.inv[cell.item] ?? 0) == 0
+                    onPressed: !(placer?.hasItem(cell.item, 1) ?? false)
                         ? null
                         : () {
                             if (placer != null) {
@@ -836,8 +912,8 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  late final Map<int, PlayerScreenState> pss = Map.fromEntries(
-      players.map((e) => MapEntry(e.code, PlayerScreenState(false, false))));
+  late final Map<int, PlayerScreenState> pss = Map.fromEntries(players
+      .map((e) => MapEntry(e.code, PlayerScreenState(false, false, false))));
 
   void invToggle(Player rplayer) {
     pss[rplayer.code]!.inventoryActive = !pss[rplayer.code]!.inventoryActive;
@@ -847,9 +923,54 @@ class _MyHomePageState extends State<MyHomePage> {
     pss[rplayer.code]!.controlsDialogActive =
         !pss[rplayer.code]!.controlsDialogActive;
   }
+
+  void advancementsDialogToggle(Player rplayer) {
+    pss[rplayer.code]!.advancementsDialogActive =
+        !pss[rplayer.code]!.advancementsDialogActive;
+  }
 }
 
-class ControlSetting extends StatefulWidget {
+class AdvancementDisplay extends StatelessWidget {
+  final Advancement advancement;
+
+  final bool acheived;
+
+  const AdvancementDisplay(this.acheived, this.advancement, {Key? key})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: acheived ? Colors.green : Colors.grey,
+      child: Row(children: [
+        parseInlinedIcons(advancement.name, 20),
+        const SizedBox(
+          width: 5,
+          height: 20,
+        ),
+        Container(
+          width: 5,
+          height: 20,
+          color: Colors.white,
+        ),
+        const SizedBox(
+          width: 5,
+          height: 20,
+        ),
+        parseInlinedIcons(advancement.description, 20),
+      ]),
+    );
+  }
+}
+
+class Advancement {
+  final String name;
+  final String description;
+
+  Advancement(this.name, this.description);
+}
+
+class ControlSetting extends StatelessWidget {
   const ControlSetting(this.p, this.c, {Key? key, required this.s})
       : super(key: key);
   final Control c;
@@ -857,27 +978,21 @@ class ControlSetting extends StatefulWidget {
   final _MyHomePageState s;
 
   @override
-  State<ControlSetting> createState() => _ControlSettingState();
-}
-
-class _ControlSettingState extends State<ControlSetting> {
-  @override
   Widget build(BuildContext context) {
     return Row(children: [
-      parseInlinedIcons(widget.c.readableName),
+      parseInlinedIcons(c.readableName),
       Text(
-        widget.c.internalName,
+        c.internalName,
         style: const TextStyle(fontSize: 10, color: Colors.grey),
       ),
       TextButton(
-        child: parseInlinedIcons(widget.s.changingControl != widget.c ||
-                widget.s.controlChanger?.code != widget.p.code
-            ? widget.c.getValue(widget.p).keyLabel
-            : 'Press any key to change'),
+        child: parseInlinedIcons(
+            s.changingControl != c || s.controlChanger?.code != p.code
+                ? c.getValue(p).keyLabel
+                : 'Press any key to change'),
         onPressed: () {
-          widget.s.changingControl = widget.c;
-          widget.s.controlChanger = widget.p;
-          setState(() {});
+          s.changingControl = c;
+          s.controlChanger = p;
         },
       ),
     ]);
@@ -897,8 +1012,15 @@ class Control {
 class PlayerScreenState {
   bool controlsDialogActive;
   bool inventoryActive;
+  bool advancementsDialogActive;
 
-  PlayerScreenState(this.controlsDialogActive, this.inventoryActive);
+  Set<Advancement> advancementsAcheived = {};
+
+  PlayerScreenState(
+    this.controlsDialogActive,
+    this.inventoryActive,
+    this.advancementsDialogActive,
+  );
 }
 
 class EntityCell {

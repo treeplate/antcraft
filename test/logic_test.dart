@@ -20,6 +20,7 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
+        LogicalKeyboardKey.escape,
       ),
     );
     world.tick();
@@ -87,9 +88,10 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
+        LogicalKeyboardKey.escape,
       ),
     );
-    expect(p.inv[wood], isNull);
+    expect(p.hasItem(wood, 1), false);
     world.tick();
     world.left(p);
     world.up(p);
@@ -97,7 +99,7 @@ void main() {
     world.tick();
     world.right(p);
     world.down(p);
-    expect(p.inv[wood], 1);
+    expect(p.hasItem(wood, 1), true);
     expect(p.tableOpen, isNull);
     expect(world.entities, everyElement(isNot(isA<Table>())));
     world.toggleTable(p);
@@ -124,18 +126,19 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
+        LogicalKeyboardKey.escape,
       ),
     );
     world.tick();
-    expect(p.inv[iron], isNull);
+    expect(p.hasItem(iron, 1), false);
     bool mined = false;
     world.mine(p, () {
       mined = true;
     });
     await tester.pump(const Duration(seconds: 2));
     expect(mined, true);
-    expect(p.inv[stone], isNull);
-    expect(p.inv[iron], 1);
+    expect(p.hasItem(stone, 1), false);
+    expect(p.hasItem(iron, 1), true);
   });
   testWidgets('Robot collection/placement', (WidgetTester tester) async {
     World world = World(MockRandom(), false);
@@ -151,11 +154,12 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
+        LogicalKeyboardKey.escape,
       ),
     );
     expect(world.entities.entries.map((kv) => kv.value).expand((e) => e),
         everyElement(isNot(isA<Robot>())));
-    expect(p.inv[robot], isNull);
+    expect(p.hasItem(robot, 1), false);
     world.tick();
     world.left(p);
     world.up(p);
@@ -170,8 +174,9 @@ void main() {
     world.mine(p, () {});
     await tester.pump(const Duration(seconds: 2));
     world.craft(p, world.recipes[0]);
-    expect(p.inv[robot], 1);
+    expect(p.hasItem(robot, 1), true);
     world.place(p, robot);
+    expect(p.hasItem(robot, 1), false);
     expect(
         world.entities.values.expand((element) => element).whereType<Robot>(),
         hasLength(1));
@@ -190,6 +195,7 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
+        LogicalKeyboardKey.escape,
       ),
     );
     world.tick();

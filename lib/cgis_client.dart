@@ -1,18 +1,5 @@
 import 'dart:io';
-
-class ItemStack {
-  final int count;
-  final String item;
-
-  @override
-  String toString() => '${count}x$item';
-
-  ItemStack(this.count, this.item);
-  factory ItemStack.parse(String input) {
-    List<String> parts = input.split('x');
-    return ItemStack(int.parse(parts[0]), parts[1]);
-  }
-}
+import 'core.dart';
 
 void register(String name, String partner, List<ItemStack> Function() oldInv,
     void Function(List<ItemStack>) newInv) async {

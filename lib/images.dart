@@ -96,14 +96,14 @@ class TableRenderer extends StatelessWidget {
   }
 }
 
-Row parseInlinedIcons(String text) {
+Row parseInlinedIcons(String text, [double size = 30]) {
   List<Widget> result = [];
   StringBuffer buffer = StringBuffer();
   bool parsingKey = false;
   for (int rune in text.runes) {
     if (parsingKey) {
       if (rune == 0x7D) {
-        result.add(renderItem(buffer.toString(), width: 30, height: 30));
+        result.add(renderItem(buffer.toString(), width: size, height: size));
         buffer = StringBuffer();
         parsingKey = false;
       } else {
@@ -113,7 +113,7 @@ Row parseInlinedIcons(String text) {
       if (rune == 0x7B) {
         result.add(Text(
           buffer.toString(),
-          style: const TextStyle(fontSize: 30, color: Colors.white),
+          style: TextStyle(fontSize: size, color: Colors.white),
         ));
         buffer = StringBuffer();
         parsingKey = true;
@@ -123,17 +123,84 @@ Row parseInlinedIcons(String text) {
     }
   }
   if (parsingKey) {
-    result.add(renderItem(buffer.toString(), width: 30, height: 30));
+    result.add(renderItem(buffer.toString(), width: size, height: size));
   } else {
     result.add(Text(
       buffer.toString(),
-      style: const TextStyle(fontSize: 30, color: Colors.white),
+      style: TextStyle(fontSize: size, color: Colors.white),
     ));
   }
   return Row(
     children: result,
     mainAxisSize: MainAxisSize.min,
   );
+}
+
+class InventoryWidget extends StatelessWidget {
+  final List<ItemStack> inventory;
+  const InventoryWidget({Key? key, required this.inventory}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    int borderSize = 2;
+    int imageSize = 30;
+    int cellSize = (imageSize + borderSize * 2);
+    return Container(
+      color: Colors.black,
+      width: 10 * cellSize / 1,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const Text(
+            "Inventory",
+            style: TextStyle(color: Colors.white),
+          ),
+          const Divider(
+            color: Colors.white,
+          ),
+          Stack(
+            children: [
+              Wrap(
+                children: inventory
+                    .map(
+                      (e) => ColoredBox(
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: ColoredBox(
+                            color: Colors.black,
+                            child: renderItem(e.item, width: 30, height: 30),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+              Wrap(
+                children: inventory
+                    .map(
+                      (e) => SizedBox(
+                        width: cellSize / 1,
+                        height: cellSize / 1,
+                        child: Center(
+                          child: Text(
+                            e.count.toString(),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
 }
 
 Widget renderItem(String? optionalItem,
@@ -185,6 +252,12 @@ Widget renderItem(String? optionalItem,
       height: height,
     );
   }
+  if (item == box) {
+    return BoxRenderer(
+      width: width,
+      height: height,
+    );
+  }
   if (item == dirt) {
     return DirtRenderer(
       width: width,
@@ -224,6 +297,31 @@ Widget renderEntity(EntityType entity,
         ghost: ghost,
         isMe: isMe,
       );
+    case EntityType.box:
+      return BoxRenderer(width: width, height: height, ghost: ghost);
+  }
+}
+
+class BoxRenderer extends StatelessWidget {
+  const BoxRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  final bool ghost;
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'images/box.png',
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    );
   }
 }
 
