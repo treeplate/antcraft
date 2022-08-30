@@ -39,6 +39,7 @@ class ItemStack {
 Map<String, int> stackSizes = {
   miner: 50,
   robot: 50,
+  box: 50,
   wood: 100,
   stone: 50,
   iron: 50,

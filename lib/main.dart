@@ -233,6 +233,7 @@ class _MyHomePageState extends State<MyHomePage> {
     EntityCell(robot, LogicalKeyboardKey.digit2),
     EntityCell(miner, LogicalKeyboardKey.digit3),
     EntityCell(dirt, LogicalKeyboardKey.digit4),
+    EntityCell(box, LogicalKeyboardKey.digit5),
   ];
 
   String cgisName = 'default';
@@ -424,7 +425,7 @@ class _MyHomePageState extends State<MyHomePage> {
   );
   final Advancement getEveryItemAdv = Advancement(
     'The Ultimate Challenge',
-    'Have every item in the game (there are 6 in total: {$wood} {$stone} {$dirt} {$iron} {$robot} {$miner}).',
+    'Have every item in the game (there are 7 in total: {$wood} {$stone} {$dirt} {$iron} {$robot} {$miner} {$box}).',
   );
   late final List<Advancement> advancements = [
     collectWoodAdv,
@@ -556,13 +557,14 @@ class _MyHomePageState extends State<MyHomePage> {
       if (player.hasItem(wood, 1)) {
         pss[player.code]!.advancementsAcheived.add(collectWoodAdv);
       }
-      if (player.inv.map((e) => e.item).toSet().length == 6) {
+      if (player.inv.map((e) => e.item).toSet().length == 8) {
         pss[player.code]!.advancementsAcheived.add(getEveryItemAdv);
       }
       if (player.collectedStored) {
         pss[player.code]!.advancementsAcheived.add(collectStoredAdv);
       }
-      if (player.hasItem(wood, 100)) {
+      if (pss[player.code]!.advancementsAcheived.length ==
+          advancements.length) {
         won = true;
       }
     }
@@ -665,7 +667,28 @@ class _MyHomePageState extends State<MyHomePage> {
                   height: 150,
                 ),
               ),
-            Center(child: Text(won ? 'You Won' : '')),
+            Center(
+              child: Text(
+                won
+                    ? 'You Won in $frames frames (or about ${() {
+                        int millis = frames * (1000 ~/ 60);
+                        int secs = millis ~/ 1000;
+                        int mins = secs ~/ 60;
+                        int nms = secs - mins * 60;
+                        int nsm = millis - secs * 1000;
+                        return '$mins:${nms.toString().padLeft(2, '0')}.${nsm.toString().padLeft(3, '0')}';
+                      }()})'
+                    : 'about ${() {
+                        int millis = frames * (1000 ~/ 60);
+                        int secs = millis ~/ 1000;
+                        int mins = secs ~/ 60;
+                        int nms = secs - mins * 60;
+                        int nsm = millis - secs * 1000;
+                        return '$mins:${nms.toString().padLeft(2, '0')}.${nsm.toString().padLeft(3, '0')}';
+                      }()}',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
             for (Entity entity in world
                     .entities[IntegerOffset(player.room.x, player.room.y)] ??
                 []) ...[
@@ -889,7 +912,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: renderItem(cell.item, width: 30, height: 30),
                         ),
                         parseInlinedIcons(
-                          '${world.describePlaced(cell.item)} (shortcut: ${cell.keybind.keyLabel})',
+                          world.describePlaced(cell.item),
                         ),
                       ],
                       mainAxisSize: MainAxisSize.min,

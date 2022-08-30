@@ -480,6 +480,9 @@ class World {
     if (item == dirt) {
       return 'Dirt';
     }
+    if (item == box) {
+      return 'Item Container';
+    }
     return 'Unknown placeable $item';
   }
 
@@ -590,6 +593,7 @@ Map<String, Entity Function(double, double, IntegerOffset, Positioned)>
   wood: (dx, dy, room, target) => Table(dx, dy, room, null),
   robot: (dx, dy, room, target) => Robot(dx, dy, room, target, null),
   miner: (dx, dy, room, target) => Miner(dx, dy, room, null),
+  box: (dx, dy, room, target) => Box(dx, dy, room, [], null),
   dirt: (dx, dy, room, target) => Dirt(dx, dy, room, null)
 };
 
@@ -730,15 +734,10 @@ class Tree extends Entity {
   EntityType get type => EntityType.tree;
 }
 
-class Player extends Entity {
-  Table? tableOpen;
-
-  Player(double dx, double dy, this.keybinds, IntegerOffset room, this.xVel,
-      this.yVel, this.inv, this.tableOpen, this.collectedStored, int? codeArg)
+abstract class InventoryEntity extends Entity {
+  InventoryEntity(
+      double dx, double dy, IntegerOffset room, this.inv, int? codeArg)
       : super(dx, dy, room, codeArg);
-  final KeybindSet keybinds;
-  double xVel;
-  double yVel;
 
   int newItem(String item, int count) {
     int remaining = count;
@@ -828,6 +827,26 @@ class Player extends Entity {
   }
 
   final List<ItemStack> inv;
+}
+
+class Player extends InventoryEntity {
+  Table? tableOpen;
+
+  Player(
+      double dx,
+      double dy,
+      this.keybinds,
+      IntegerOffset room,
+      this.xVel,
+      this.yVel,
+      List<ItemStack> inv,
+      this.tableOpen,
+      this.collectedStored,
+      int? codeArg)
+      : super(dx, dy, room, inv, codeArg);
+  final KeybindSet keybinds;
+  double xVel;
+  double yVel;
 
   bool collectedStored;
   @override
@@ -848,6 +867,26 @@ class Player extends Entity {
 
   @override
   EntityType get type => EntityType.player;
+}
+
+class Box extends InventoryEntity {
+  Box(double dx, double dy, IntegerOffset room, List<ItemStack> inv,
+      int? codeArg)
+      : super(dx, dy, room, inv, codeArg);
+
+  @override
+  EntityType get type => EntityType.box;
+
+  @override
+  Entity copy() {
+    return Box(
+      dx,
+      dy,
+      room,
+      inv.map((e) => e.copy()).toList(),
+      code,
+    );
+  }
 }
 
 class KeybindSet {
