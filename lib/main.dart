@@ -1,7 +1,6 @@
 // ignore_for_file: avoid_print
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart' hide Table, Positioned;
@@ -131,8 +130,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  TextEditingController cA =
-      TextEditingController(text: Platform.localHostname);
+  TextEditingController cA = TextEditingController(text: 'main');
   TextEditingController cB = TextEditingController(text: 'partner');
 
   late final World world = World(Random(), widget.cgisOn);
