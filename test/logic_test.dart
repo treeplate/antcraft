@@ -100,17 +100,17 @@ void main() {
     world.right(p);
     world.down(p);
     expect(p.hasItem(wood, 1), true);
-    expect(p.tableOpen, isNull);
+    expect(p.interacting, isNull);
     expect(world.entities, everyElement(isNot(isA<Table>())));
-    world.toggleTable(p);
-    expect(p.tableOpen, isNull);
+    world.interact(p);
+    expect(p.interacting, isNull);
     expect(world.place(p, wood), true);
     expect(
         world.entities.values.expand((element) => element).whereType<Table>(),
         hasLength(1));
-    expect(p.tableOpen, isNull);
-    world.toggleTable(p);
-    expect(p.tableOpen, isNotNull);
+    expect(p.interacting, isNull);
+    world.interact(p);
+    expect(p.interacting, isNotNull);
   });
   testWidgets('Mining iron', (WidgetTester tester) async {
     World world = World(MockRandom(), false);
@@ -168,7 +168,7 @@ void main() {
     world.right(p);
     world.down(p);
     expect(world.place(p, wood), true);
-    world.toggleTable(
+    world.interact(
       p,
     );
     world.mine(p, () {});
@@ -206,7 +206,7 @@ void main() {
     world.right(p);
     world.down(p);
     world.place(p, wood);
-    world.toggleTable(p);
+    world.interact(p);
     world.mine(p, () {});
     await tester.pump(const Duration(seconds: 2));
     world.craft(p, world.recipes[0]);

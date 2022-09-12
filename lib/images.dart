@@ -138,7 +138,9 @@ Row parseInlinedIcons(String text, [double size = 30]) {
 
 class InventoryWidget extends StatelessWidget {
   final List<ItemStack> inventory;
-  const InventoryWidget({Key? key, required this.inventory}) : super(key: key);
+  final void Function(ItemStack)? callback;
+  const InventoryWidget({Key? key, required this.inventory, this.callback})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -164,36 +166,49 @@ class InventoryWidget extends StatelessWidget {
                 children: inventory
                     .map(
                       (e) => ColoredBox(
-                        color: Colors.white,
+                        color: Colors.green,
                         child: Padding(
-                          padding: const EdgeInsets.all(2),
-                          child: ColoredBox(
-                            color: Colors.black,
-                            child: renderItem(e.item, width: 30, height: 30),
+                          padding: EdgeInsets.all(borderSize / 1),
+                          child: GestureDetector(
+                            child: ColoredBox(
+                              color: Colors.black,
+                              child: renderItem(
+                                e.item,
+                                width: imageSize / 1,
+                                height: imageSize / 1,
+                              ),
+                            ),
+                            onTap: callback != null
+                                ? () {
+                                    callback!(e);
+                                  }
+                                : null,
                           ),
                         ),
                       ),
                     )
                     .toList(),
               ),
-              Wrap(
-                children: inventory
-                    .map(
-                      (e) => SizedBox(
-                        width: cellSize / 1,
-                        height: cellSize / 1,
-                        child: Center(
-                          child: Text(
-                            e.count.toString(),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.white,
+              IgnorePointer(
+                child: Wrap(
+                  children: inventory
+                      .map(
+                        (e) => SizedBox(
+                          width: cellSize / 1,
+                          height: cellSize / 1,
+                          child: Center(
+                            child: Text(
+                              e.count.toString(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    )
-                    .toList(),
+                      )
+                      .toList(),
+                ),
               ),
             ],
           )

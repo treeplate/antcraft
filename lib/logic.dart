@@ -122,22 +122,23 @@ class World {
     return true;
   }
 
-  void toggleTable(Player fakePlayer) {
+  void interact(Player fakePlayer) {
     Player player =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
             .singleWhere((element) => element.value.code == fakePlayer.code)
             .value as Player;
-    if (player.tableOpen == null) {
-      for (MapEntry<Offset, Table> table
-          in _atOfType(player.room.x, player.room.y, EntityType.table)
-              .map((e) => MapEntry(e.key, e.value as Table))
-              .cast()) {
-        if (colliding(Offset(player.dx, player.dy), 3, table.key, 3)) {
-          player.tableOpen = table.value;
+    if (player.interacting == null) {
+      for (Interacter interacter in _entitiesByType.values
+          .expand((element) => element.values)
+          .expand((element) => element)
+          .whereType()) {
+        if (colliding(Offset(player.dx, player.dy), 3,
+            Offset(interacter.dx, interacter.dy), 3)) {
+          player.interacting = interacter;
         }
       }
     } else {
-      player.tableOpen = null;
+      player.interacting = null;
     }
   }
 
@@ -239,7 +240,7 @@ class World {
           genRoom(entityRoom);
         }
         Room room = _rooms[entityRoom.x]![entityRoom.y]!;
-        for (Player player in _entitiesByType.entries
+        for (InventoryEntity player in _entitiesByType.entries
             .map((e) =>
                 MapEntry(e.key, e.value.values.expand((element) => element)))
             .expand((e) => e.value)
@@ -250,7 +251,7 @@ class World {
                   Offset(storer.dx, storer.dy), 3)) {
             bool pre = storer.inv == 0;
             storer.inv = player.newItem(storer.storedItem(room), storer.inv);
-            if (!pre && storer.inv == 0) {
+            if (!pre && storer.inv == 0 && player is Player) {
               player.collectedStored = true;
             }
           }
@@ -398,7 +399,7 @@ class World {
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
             .singleWhere((element) => element.value.code == fakePlayer.code)
             .value as Player;
-    if (player.tableOpen != null) {
+    if (player.interacting is Table) {
       for (MapEntry<String, int> item in recipe.recipe.entries) {
         if (!player.hasItem(item.key, item.value)) {
           return false;
@@ -410,6 +411,49 @@ class World {
           assert(sA);
         }
       }
+      return true;
+    }
+    return false;
+  }
+
+  bool store(Player fakePlayer, ItemStack items) {
+    if (items.item == null) {
+      return false;
+    }
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    if (player.interacting is Box) {
+      if (!player.hasItem(items.item!, items.count)) {
+        return false;
+      }
+      player.takeItem(
+        items.item!,
+        items.count -
+            (player.interacting as Box).newItem(items.item!, items.count),
+      );
+      return true;
+    }
+    return false;
+  }
+
+  bool take(Player fakePlayer, ItemStack items) {
+    if (items.item == null) {
+      return false;
+    }
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    if (player.interacting is Box) {
+      if (!(player.interacting as Box).hasItem(items.item!, items.count)) {
+        return false;
+      }
+      (player.interacting as Box).takeItem(
+        items.item!,
+        items.count - player.newItem(items.item!, items.count),
+      );
       return true;
     }
     return false;
@@ -593,7 +637,8 @@ Map<String, Entity Function(double, double, IntegerOffset, Positioned)>
   wood: (dx, dy, room, target) => Table(dx, dy, room, null),
   robot: (dx, dy, room, target) => Robot(dx, dy, room, target, null),
   miner: (dx, dy, room, target) => Miner(dx, dy, room, null),
-  box: (dx, dy, room, target) => Box(dx, dy, room, [], null),
+  box: (dx, dy, room, target) =>
+      Box(dx, dy, room, List.generate(10 * 8, (i) => ItemStack(0, null)), null),
   dirt: (dx, dy, room, target) => Dirt(dx, dy, room, null)
 };
 
@@ -616,7 +661,7 @@ abstract class Entity extends Positioned {
   EntityType get type;
 }
 
-class Table extends Entity {
+class Table extends Interacter {
   Table(double dx, double dy, IntegerOffset room, int? codeArg)
       : super(dx, dy, room, codeArg);
 
@@ -830,7 +875,7 @@ abstract class InventoryEntity extends Entity {
 }
 
 class Player extends InventoryEntity {
-  Table? tableOpen;
+  Interacter? interacting;
 
   Player(
       double dx,
@@ -840,7 +885,7 @@ class Player extends InventoryEntity {
       this.xVel,
       this.yVel,
       List<ItemStack> inv,
-      this.tableOpen,
+      this.interacting,
       this.collectedStored,
       int? codeArg)
       : super(dx, dy, room, inv, codeArg);
@@ -859,7 +904,7 @@ class Player extends InventoryEntity {
       xVel,
       yVel,
       inv.map((e) => e.copy()).toList(),
-      tableOpen?.copy(),
+      interacting?.copy(),
       collectedStored,
       code,
     );
@@ -869,7 +914,14 @@ class Player extends InventoryEntity {
   EntityType get type => EntityType.player;
 }
 
-class Box extends InventoryEntity {
+abstract class Interacter extends Entity {
+  Interacter(double dx, double dy, IntegerOffset room, int? codeArg)
+      : super(dx, dy, room, codeArg);
+  @override
+  Interacter copy();
+}
+
+class Box extends InventoryEntity implements Interacter {
   Box(double dx, double dy, IntegerOffset room, List<ItemStack> inv,
       int? codeArg)
       : super(dx, dy, room, inv, codeArg);
@@ -878,7 +930,7 @@ class Box extends InventoryEntity {
   EntityType get type => EntityType.box;
 
   @override
-  Entity copy() {
+  Box copy() {
     return Box(
       dx,
       dy,
@@ -895,7 +947,7 @@ class KeybindSet {
   LogicalKeyboardKey left; // s
   LogicalKeyboardKey right; // d
   LogicalKeyboardKey inventory; // e
-  LogicalKeyboardKey openTable; // f
+  LogicalKeyboardKey interact; // f
   LogicalKeyboardKey plant; // q
   LogicalKeyboardKey mine; // v
   LogicalKeyboardKey placePrefix; // c
@@ -908,7 +960,7 @@ class KeybindSet {
     this.left,
     this.right,
     this.inventory,
-    this.openTable,
+    this.interact,
     this.plant,
     this.placePrefix,
     this.mine,

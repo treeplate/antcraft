@@ -278,11 +278,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   static LogicalKeyboardKey gpot(Player p1) {
-    return p1.keybinds.openTable;
+    return p1.keybinds.interact;
   }
 
   static void spot(Player p1, LogicalKeyboardKey p2) {
-    p1.keybinds.openTable = p2;
+    p1.keybinds.interact = p2;
   }
 
   static LogicalKeyboardKey getPlayerPlant(Player p1) {
@@ -514,8 +514,8 @@ class _MyHomePageState extends State<MyHomePage> {
           pss[rplayer.code]!.advancementsAcheived.add(mineAdv);
         });
       }
-      if (event.logicalKey == player.openTable && event is KeyDownEvent) {
-        world.toggleTable(rplayer);
+      if (event.logicalKey == player.interact && event is KeyDownEvent) {
+        world.interact(rplayer);
       }
       if (event.logicalKey == player.plant && event is KeyDownEvent) {
         if (world.plant(rplayer)) {
@@ -537,7 +537,7 @@ class _MyHomePageState extends State<MyHomePage> {
         pss[rplayer.code]!.controlsDialogActive = false;
         pss[rplayer.code]!.advancementsDialogActive = false;
         pss[rplayer.code]!.inventoryActive = false;
-        world.toggleTable(rplayer);
+        world.interact(rplayer);
       }
     }
 
@@ -735,7 +735,32 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 ),
               ),
-            if (player.tableOpen != null)
+            if (player.interacting is Box)
+              Center(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InventoryWidget(
+                      inventory: player.inv,
+                      callback: (p0) {
+                        world.store(player, p0);
+                      },
+                    ),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    InventoryWidget(
+                      inventory: (player.interacting as Box).inv,
+                      callback: (p0) {
+                        world.take(player, p0);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            if (player.interacting is Table)
               Center(
                 child: Container(
                   color: Colors.black,

@@ -1,7 +1,7 @@
 # antcraft
 A 2D automation-based work-in-progress open-world game.
-## Current game
-- Infinite-sized inventory
+## Current game (outdated)
+- Finite-sized inventory
 - Wood:
   - natural generation: one wood item per room
   - collection: walking onto a wood item gets you that item
