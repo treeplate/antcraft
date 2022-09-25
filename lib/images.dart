@@ -273,6 +273,12 @@ Widget renderItem(String? optionalItem,
       height: height,
     );
   }
+  if (item == planter) {
+    return PlanterRenderer(
+      width: width,
+      height: height,
+    );
+  }
   if (item == dirt) {
     return DirtRenderer(
       width: width,
@@ -314,6 +320,8 @@ Widget renderEntity(EntityType entity,
       );
     case EntityType.box:
       return BoxRenderer(width: width, height: height, ghost: ghost);
+    case EntityType.planter:
+      return PlanterRenderer(width: width, height: height, ghost: ghost);
   }
 }
 
@@ -331,6 +339,29 @@ class BoxRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       'images/box.png',
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    );
+  }
+}
+
+class PlanterRenderer extends StatelessWidget {
+  const PlanterRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  final bool ghost;
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'images/auto-planter.png',
       width: width,
       height: height,
       fit: BoxFit.cover,

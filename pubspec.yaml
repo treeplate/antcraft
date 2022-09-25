@@ -63,6 +63,7 @@ flutter:
     - images/placed-wood.png
     - images/robot.png
     - images/miner.png
+    - images/auto-planter.png
     - images/box.png
     - images/dirt.png
     - images/tree-sapling.png
