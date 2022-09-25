@@ -232,6 +232,7 @@ class _MyHomePageState extends State<MyHomePage> {
     EntityCell(miner, LogicalKeyboardKey.digit3),
     EntityCell(dirt, LogicalKeyboardKey.digit4),
     EntityCell(box, LogicalKeyboardKey.digit5),
+    EntityCell(planter, LogicalKeyboardKey.digit6),
   ];
 
   String cgisName = 'default';
@@ -733,6 +734,31 @@ class _MyHomePageState extends State<MyHomePage> {
                         isMe: entity2.code == player.code,
                       ),
                   ],
+                ),
+              ),
+            if (player.interacting is Planter)
+              Center(
+                child: Container(
+                  color: Colors.black,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'AUTO-PLANTER',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          world.toggleNeedsRobot(player);
+                        },
+                        child: Text(
+                          (player.interacting as Planter).needsRobot
+                              ? 'Unassign robot'
+                              : 'Assign random robot to this',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             if (player.interacting is Box)

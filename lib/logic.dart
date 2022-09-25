@@ -12,6 +12,7 @@ class World {
     Recipe({iron: 1}, robot),
     Recipe({wood: 1, iron: 1}, miner),
     Recipe({wood: 1}, box),
+    Recipe({wood: 1, iron: 2, dirt: 1}, planter),
   ];
 
   bool cgisMenuActive;
@@ -224,7 +225,24 @@ class World {
         .expand((e) => e.value.map((e2) => MapEntry(e.key, e2)))
         .toList()) {
       IntegerOffset entityRoom = entity.key;
-      if (entity.value is Sapling) {
+      if (entity.value is Planter) {
+        Planter planter = entity.value as Planter;
+        if (planter.needsRobot && planter.robot == null) {
+          for (Robot robot in _entitiesByType.entries
+              .map((e) =>
+                  MapEntry(e.key, e.value.values.expand((element) => element)))
+              .expand((e) => e.value)
+              .whereType()) {
+            if (robot.target is Player) {
+              robot.target = planter;
+              planter.robot = robot;
+            }
+          }
+        }
+        if (!planter.needsRobot && planter.robot != null) {
+          assert(false);
+        }
+      } else if (entity.value is Sapling) {
         Sapling sapling = entity.value as Sapling;
         sapling.growth--;
         if (sapling.growth == 0) {
@@ -253,6 +271,25 @@ class World {
             storer.inv = player.newItem(storer.storedItem(room), storer.inv);
             if (!pre && storer.inv == 0 && player is Player) {
               player.collectedStored = true;
+            }
+          }
+        }
+        if (storer.storedItem(_rooms[entityRoom.x]![entityRoom.y]!) == wood) {
+          for (Planter planter in _entitiesByType.entries
+              .map((e) =>
+                  MapEntry(e.key, e.value.values.expand((element) => element)))
+              .expand((e) => e.value)
+              .whereType<Planter>()
+              .toList()) {
+            if (planter.room.x == entityRoom.x &&
+                planter.room.y == entityRoom.y &&
+                colliding(Offset(planter.dx, planter.dy), 3,
+                    Offset(storer.dx, storer.dy), 3)) {
+              if (storer.inv >= 3) {
+                storer.inv -= 3;
+                _placePrebuilt(
+                    Sapling(planter.dx, planter.dy, 360, entityRoom, null));
+              }
             }
           }
         }
@@ -459,6 +496,23 @@ class World {
     return false;
   }
 
+  bool toggleNeedsRobot(Player fakePlayer) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    if (player.interacting is Planter) {
+      Planter p = player.interacting as Planter;
+      p.needsRobot = !p.needsRobot;
+      if (!p.needsRobot && p.robot != null) {
+        p.robot!.target = player;
+        p.robot = null;
+      }
+      return true;
+    }
+    return false;
+  }
+
   Room roomAt(IntegerOffset room) {
     if (_rooms[room.x] == null) {
       _rooms[room.x] = {};
@@ -526,6 +580,9 @@ class World {
     }
     if (item == box) {
       return 'Item Container';
+    }
+    if (item == planter) {
+      return 'Automatic{entity.${EntityType.sapling.name}}Planter';
     }
     return 'Unknown placeable $item';
   }
@@ -639,6 +696,7 @@ Map<String, Entity Function(double, double, IntegerOffset, Positioned)>
   miner: (dx, dy, room, target) => Miner(dx, dy, room, null),
   box: (dx, dy, room, target) =>
       Box(dx, dy, room, List.generate(10 * 8, (i) => ItemStack(0, null)), null),
+  planter: (dx, dy, room, target) => Planter(dx, dy, room, null, false, null),
   dirt: (dx, dy, room, target) => Dirt(dx, dy, room, null)
 };
 
@@ -735,7 +793,7 @@ class Positioned {
 class Miner extends Storer {
   Miner(double dx, double dy, IntegerOffset room, int? codeArg,
       [int inv = 0, this.cooldown = 1])
-      : super(dx, dy, room, inv);
+      : super(dx, dy, room, codeArg, inv);
 
   int cooldown;
 
@@ -749,6 +807,28 @@ class Miner extends Storer {
 
   @override
   EntityType get type => EntityType.miner;
+}
+
+class Planter extends Interacter {
+  Planter(
+    double dx,
+    double dy,
+    IntegerOffset room,
+    int? codeArg,
+    this.needsRobot,
+    this.robot,
+  ) : super(dx, dy, room, codeArg);
+
+  Robot? robot;
+  bool needsRobot;
+
+  @override
+  Planter copy() {
+    return Planter(dx, dy, room, code, needsRobot, robot);
+  }
+
+  @override
+  EntityType get type => EntityType.planter;
 }
 
 class Sapling extends Entity {
