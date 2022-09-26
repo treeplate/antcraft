@@ -20,7 +20,6 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
-        LogicalKeyboardKey.escape,
       ),
     );
     world.tick();
@@ -88,7 +87,6 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
-        LogicalKeyboardKey.escape,
       ),
     );
     expect(p.hasItem(wood, 1), false);
@@ -126,7 +124,6 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
-        LogicalKeyboardKey.escape,
       ),
     );
     world.tick();
@@ -154,7 +151,6 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
-        LogicalKeyboardKey.escape,
       ),
     );
     expect(world.entities.entries.map((kv) => kv.value).expand((e) => e),
@@ -195,7 +191,6 @@ void main() {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
-        LogicalKeyboardKey.escape,
       ),
     );
     world.tick();

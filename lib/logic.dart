@@ -1032,7 +1032,6 @@ class KeybindSet {
   LogicalKeyboardKey mine; // v
   LogicalKeyboardKey placePrefix; // c
   LogicalKeyboardKey openControlsDialog; // <tab>
-  LogicalKeyboardKey closeMenu; // <tab>
 
   KeybindSet(
     this.up,
@@ -1045,7 +1044,6 @@ class KeybindSet {
     this.placePrefix,
     this.mine,
     this.openControlsDialog,
-    this.closeMenu,
   );
 }
 

@@ -205,7 +205,6 @@ class _MyHomePageState extends State<MyHomePage> {
         LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.tab,
-        LogicalKeyboardKey.escape,
       ),
     ),
     if (widget.multiplayer)
@@ -221,7 +220,6 @@ class _MyHomePageState extends State<MyHomePage> {
           LogicalKeyboardKey.period,
           LogicalKeyboardKey.slash,
           LogicalKeyboardKey.keyY,
-          LogicalKeyboardKey.f5,
         ),
       ),
   ];
@@ -302,28 +300,12 @@ class _MyHomePageState extends State<MyHomePage> {
     p1.keybinds.mine = p2;
   }
 
-  static LogicalKeyboardKey getPlayerPlace(Player p1) {
-    return p1.keybinds.placePrefix;
-  }
-
-  static void setPlayerPlace(Player p1, LogicalKeyboardKey p2) {
-    p1.keybinds.placePrefix = p2;
-  }
-
   static LogicalKeyboardKey gpoc(Player p1) {
     return p1.keybinds.openControlsDialog;
   }
 
   static void spoc(Player p1, LogicalKeyboardKey p2) {
     p1.keybinds.openControlsDialog = p2;
-  }
-
-  static LogicalKeyboardKey gpc(Player p1) {
-    return p1.keybinds.closeMenu;
-  }
-
-  static void spc(Player p1, LogicalKeyboardKey p2) {
-    p1.keybinds.closeMenu = p2;
   }
 
   static const List<Control> controls = [
@@ -352,7 +334,7 @@ class _MyHomePageState extends State<MyHomePage> {
       spr,
     ),
     Control(
-      'Toggle inventory',
+      'Open inventory / Close menu',
       'inventory',
       gpi,
       spi,
@@ -376,22 +358,10 @@ class _MyHomePageState extends State<MyHomePage> {
       spm,
     ),
     Control(
-      'Place something',
-      'placePrefix',
-      getPlayerPlace,
-      setPlayerPlace,
-    ),
-    Control(
       'Toggle this menu',
       'openControlsDialog',
       gpoc,
       spoc,
-    ),
-    Control(
-      'Close any menu',
-      'closeMenu',
-      gpc,
-      spc,
     ),
   ];
   final Advancement collectWoodAdv = Advancement(
@@ -400,7 +370,7 @@ class _MyHomePageState extends State<MyHomePage> {
   );
   final Advancement placeAdv = Advancement(
     'Ready to Craft',
-    'Place an item (Press the place key [typically \'c\'], then press 1 to place your {$wood} [or 2,3,4 if you have the right item in your inventory]).',
+    'Place an item (Press the {$wood} icon at the bottom of the screen to place a {$wood}, or other icons if you have the respective item. You can also use the number keys.).',
   );
   final Advancement mineAdv = Advancement(
     'Diggy Diggy',
@@ -473,39 +443,48 @@ class _MyHomePageState extends State<MyHomePage> {
       if (event.logicalKey == player.up) {
         if (event is KeyDownEvent) {
           world.up(rplayer);
+          placer = rplayer;
         }
         if (event is KeyUpEvent) {
           world.down(rplayer);
+          placer = rplayer;
         }
       }
       if (event.logicalKey == player.down) {
         if (event is KeyDownEvent) {
           world.down(rplayer);
+          placer = rplayer;
         }
         if (event is KeyUpEvent) {
           world.up(rplayer);
+          placer = rplayer;
         }
       }
       if (event.logicalKey == player.right) {
         if (event is KeyDownEvent) {
           world.right(rplayer);
+          placer = rplayer;
         }
         if (event is KeyUpEvent) {
           world.left(rplayer);
+          placer = rplayer;
         }
       }
       if (event.logicalKey == player.left) {
         if (event is KeyDownEvent) {
           world.left(rplayer);
+          placer = rplayer;
         }
         if (event is KeyUpEvent) {
           world.right(rplayer);
+          placer = rplayer;
         }
       }
       if (event.logicalKey == player.mine && event is KeyDownEvent) {
         if (world.chop(rplayer)) {
           pss[rplayer.code]!.advancementsAcheived.add(chopAdv);
         }
+        placer = rplayer;
         world.mine(rplayer, () {
           mineFeedback = '+1';
           Timer(
@@ -514,31 +493,34 @@ class _MyHomePageState extends State<MyHomePage> {
           );
           pss[rplayer.code]!.advancementsAcheived.add(mineAdv);
         });
+        placer = rplayer;
       }
       if (event.logicalKey == player.interact && event is KeyDownEvent) {
         world.interact(rplayer);
+        placer = rplayer;
       }
       if (event.logicalKey == player.plant && event is KeyDownEvent) {
         if (world.plant(rplayer)) {
           pss[rplayer.code]!.advancementsAcheived.add(plantAdv);
         }
+        placer = rplayer;
       }
       if (event.logicalKey == player.inventory && event is KeyDownEvent) {
         invToggle(rplayer);
-      }
-      if (event.logicalKey == player.placePrefix && event is KeyDownEvent) {
         placer = rplayer;
       }
       if (event.logicalKey == player.openControlsDialog &&
           event is KeyDownEvent) {
         pss[rplayer.code]!.controlsDialogActive =
             !pss[rplayer.code]!.controlsDialogActive;
+        placer = rplayer;
       }
-      if (event.logicalKey == player.closeMenu && event is KeyDownEvent) {
+      if (event.logicalKey == player.inventory && event is KeyDownEvent) {
         pss[rplayer.code]!.controlsDialogActive = false;
         pss[rplayer.code]!.advancementsDialogActive = false;
         pss[rplayer.code]!.inventoryActive = false;
         world.interact(rplayer);
+        placer = rplayer;
       }
     }
 
@@ -961,7 +943,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: renderItem(cell.item, width: 30, height: 30),
                         ),
                         parseInlinedIcons(
-                          world.describePlaced(cell.item),
+                          world.describePlaced(cell.item) +
+                              ' (have ${placer?.inv.where((element) => element.item == cell.item).fold<int>(0, (p, n) => p + n.count) ?? 'N/A'})',
                         ),
                       ],
                       mainAxisSize: MainAxisSize.min,
