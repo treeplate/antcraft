@@ -65,6 +65,7 @@ flutter:
     - images/miner.png
     - images/auto-planter.png
     - images/auto-chopper.png
+    - images/antenna.png
     - images/box.png
     - images/dirt.png
     - images/tree-sapling.png

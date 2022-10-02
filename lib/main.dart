@@ -135,6 +135,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   late final World world = World(Random(), widget.cgisOn);
 
+  Entity? yh; // yellow highlight
+  Entity? gh; // green highlight
+
   @override
   void initState() {
     scheduleMicrotask(() {
@@ -232,6 +235,7 @@ class _MyHomePageState extends State<MyHomePage> {
     EntityCell(box, LogicalKeyboardKey.digit5),
     EntityCell(planter, LogicalKeyboardKey.digit6),
     EntityCell(chopper, LogicalKeyboardKey.digit7),
+    EntityCell(antenna, LogicalKeyboardKey.digit8),
   ];
 
   String cgisName = 'default';
@@ -719,31 +723,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 ),
               ),
-            if (player.interacting is Planter)
-              Center(
-                child: Container(
-                  color: Colors.black,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'AUTO-PLANTER',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          world.toggleNeedsRobot(player);
-                        },
-                        child: Text(
-                          (player.interacting as Planter).needsRobot
-                              ? 'Unassign robot'
-                              : 'Assign random robot to this',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             if (player.interacting is Box)
               Center(
                 child: Row(
@@ -767,6 +746,55 @@ class _MyHomePageState extends State<MyHomePage> {
                       },
                     ),
                   ],
+                ),
+              ),
+            if (player.interacting is Antenna)
+              Center(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: world.entities.entries
+                      .expand((element) => element.value)
+                      .whereType<Robot>()
+                      .map(
+                        (e) => Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            parseInlinedIcons(
+                              '{$robot}id ${e.code} destination:',
+                            ),
+                            DropdownButton(
+                              items: world.entities.entries
+                                  .expand((element) => element.value)
+                                  .map(
+                                    (e2) => DropdownMenuItem(
+                                      value: e2,
+                                      child: parseInlinedIcons(
+                                          '{entity.${e2.type}}id ${e2.code}'),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (e2) {
+                                world.assignTo(player, e, e2 as Entity);
+                              },
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                gh = e;
+                                yh = e.target is Entity
+                                    ? e.target as Entity
+                                    : null;
+                              },
+                              child: Text(gh == e
+                                  ? 'Highlight destination if it changed'
+                                  : 'Highlight'),
+                            )
+                          ],
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             if (player.interacting is Table)

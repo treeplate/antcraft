@@ -14,17 +14,19 @@ class World {
     Recipe({wood: 1}, box),
     Recipe({wood: 1, iron: 2, dirt: 1}, planter),
     Recipe({wood: 1, iron: 3}, chopper),
+    Recipe({iron: 1}, antenna),
   ];
 
   static Map<String, Entity Function(double, double, IntegerOffset, Positioned)>
       placingTypes = {
     wood: (dx, dy, room, target) => Table(dx, dy, room, null),
-    robot: (dx, dy, room, target) => Robot(dx, dy, room, target, null),
+    robot: (dx, dy, room, target) => Robot(dx, dy, room, target, null, true),
     miner: (dx, dy, room, target) => Miner(dx, dy, room, null),
     box: (dx, dy, room, target) => Box(
         dx, dy, room, List.generate(10 * 8, (i) => ItemStack(0, null)), null),
-    planter: (dx, dy, room, target) => Planter(dx, dy, room, null, false, null),
+    planter: (dx, dy, room, target) => Planter(dx, dy, room, null),
     chopper: (dx, dy, room, target) => Chopper(dx, dy, room, null),
+    antenna: (dx, dy, room, target) => Antenna(dx, dy, room, null),
     dirt: (dx, dy, room, target) => Dirt(dx, dy, room, null)
   };
 
@@ -238,24 +240,7 @@ class World {
         .expand((e) => e.value.map((e2) => MapEntry(e.key, e2)))
         .toList()) {
       IntegerOffset entityRoom = entity.key;
-      if (entity.value is Planter) {
-        Planter planter = entity.value as Planter;
-        if (planter.needsRobot && planter.robot == null) {
-          for (Robot robot in _entitiesByType.entries
-              .map((e) =>
-                  MapEntry(e.key, e.value.values.expand((element) => element)))
-              .expand((e) => e.value)
-              .whereType()) {
-            if (robot.target is Player) {
-              robot.target = planter;
-              planter.robot = robot;
-            }
-          }
-        }
-        if (!planter.needsRobot && planter.robot != null) {
-          assert(false);
-        }
-      } else if (entity.value is Chopper) {
+      if (entity.value is Chopper) {
         for (Tree tree in _entitiesByType.entries
             .map((e) =>
                 MapEntry(e.key, e.value.values.expand((element) => element)))
@@ -387,12 +372,14 @@ class World {
             if (_atOfType(
                     entityRoom.x, entityRoom.y, EntityType.collectibleWood)
                 .isEmpty) {
-              IntegerOffset woodRoom = nearestRoomWhere(
-                  (Room r, IntegerOffset rPos) =>
-                      _atOfType(rPos.x, rPos.y, EntityType.collectibleWood)
-                          .isNotEmpty,
-                  to: entityRoom);
-              honeRoom(woodRoom.x, woodRoom.y);
+              if (robot.exploreForWood) {
+                IntegerOffset woodRoom = nearestRoomWhere(
+                    (Room r, IntegerOffset rPos) =>
+                        _atOfType(rPos.x, rPos.y, EntityType.collectibleWood)
+                            .isNotEmpty,
+                    to: entityRoom);
+                honeRoom(woodRoom.x, woodRoom.y);
+              }
             } else {
               hone(
                   _atOfType(entityRoom.x, entityRoom.y,
@@ -461,6 +448,7 @@ class World {
     }
   }
 
+  // fakePlayer.interacting must be a Table, and fakePlayer must also have all the materials for [recipe]
   bool craft(Player fakePlayer, Recipe recipe) {
     Player player =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
@@ -483,6 +471,7 @@ class World {
     return false;
   }
 
+  // fakePlayer.interacting must be a Box, and fakePlayer must also have all the materials in [items]
   bool store(Player fakePlayer, ItemStack items) {
     if (items.item == null) {
       return false;
@@ -505,6 +494,7 @@ class World {
     return false;
   }
 
+  // fakePlayer.interacting must be a Box, and fakePlayer.interacting must also have all the materials in [items]
   bool take(Player fakePlayer, ItemStack items) {
     if (items.item == null) {
       return false;
@@ -526,18 +516,38 @@ class World {
     return false;
   }
 
-  bool toggleNeedsRobot(Player fakePlayer) {
+  // fakePlayer.interacting must be an Antenna
+  bool assignTo(Player fakePlayer, Robot fakeRobot, Entity fakeDest) {
     Player player =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
             .singleWhere((element) => element.value.code == fakePlayer.code)
             .value as Player;
-    if (player.interacting is Planter) {
-      Planter p = player.interacting as Planter;
-      p.needsRobot = !p.needsRobot;
-      if (!p.needsRobot && p.robot != null) {
-        p.robot!.target = player;
-        p.robot = null;
-      }
+    Robot robot =
+        _atOfType(fakeRobot.room.x, fakeRobot.room.y, EntityType.robot)
+            .singleWhere((element) => element.value.code == fakeRobot.code)
+            .value as Robot;
+    Entity dest = _atOfType(fakeDest.room.x, fakeDest.room.y, fakeDest.type)
+        .singleWhere((element) => element.value.code == fakeDest.code)
+        .value;
+    if (player.interacting is Antenna) {
+      robot.target = dest;
+      return true;
+    }
+    return false;
+  }
+
+  // fakePlayer.interacting must be an Antenna
+  bool toggleExploreForWood(Player fakePlayer, Robot fakeRobot) {
+    Player player =
+        _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
+            .singleWhere((element) => element.value.code == fakePlayer.code)
+            .value as Player;
+    Robot robot =
+        _atOfType(fakeRobot.room.x, fakeRobot.room.y, EntityType.robot)
+            .singleWhere((element) => element.value.code == fakeRobot.code)
+            .value as Robot;
+    if (player.interacting is Antenna) {
+      robot.exploreForWood = !robot.exploreForWood;
       return true;
     }
     return false;
@@ -762,7 +772,10 @@ abstract class Storer extends Entity {
 }
 
 class Robot extends Storer {
+  bool exploreForWood;
+
   Robot(double dx, double dy, IntegerOffset room, this.target, int? codeArg,
+      this.exploreForWood,
       [int inv = 0])
       : super(dx, dy, room, codeArg, inv);
 
@@ -773,7 +786,7 @@ class Robot extends Storer {
 
   @override
   Robot copy() {
-    return Robot(dx, dy, room, target, code, inv);
+    return Robot(dx, dy, room, target, code, exploreForWood, inv);
   }
 
   @override
@@ -806,22 +819,17 @@ class Miner extends Storer {
   EntityType get type => EntityType.miner;
 }
 
-class Planter extends Interacter {
+class Planter extends Entity {
   Planter(
     double dx,
     double dy,
     IntegerOffset room,
     int? codeArg,
-    this.needsRobot,
-    this.robot,
   ) : super(dx, dy, room, codeArg);
-
-  Robot? robot;
-  bool needsRobot;
 
   @override
   Planter copy() {
-    return Planter(dx, dy, room, code, needsRobot, robot);
+    return Planter(dx, dy, room, code);
   }
 
   @override
@@ -843,6 +851,23 @@ class Chopper extends Entity {
 
   @override
   EntityType get type => EntityType.chopper;
+}
+
+class Antenna extends Interacter {
+  Antenna(
+    double dx,
+    double dy,
+    IntegerOffset room,
+    int? codeArg,
+  ) : super(dx, dy, room, codeArg);
+
+  @override
+  Antenna copy() {
+    return Antenna(dx, dy, room, code);
+  }
+
+  @override
+  EntityType get type => EntityType.antenna;
 }
 
 class Sapling extends Entity {
