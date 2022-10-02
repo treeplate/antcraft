@@ -231,6 +231,7 @@ class _MyHomePageState extends State<MyHomePage> {
     EntityCell(dirt, LogicalKeyboardKey.digit4),
     EntityCell(box, LogicalKeyboardKey.digit5),
     EntityCell(planter, LogicalKeyboardKey.digit6),
+    EntityCell(chopper, LogicalKeyboardKey.digit7),
   ];
 
   String cgisName = 'default';
@@ -783,12 +784,12 @@ class _MyHomePageState extends State<MyHomePage> {
                       const Divider(
                         color: Colors.white,
                       ),
-                      for (int i = 0; i < world.recipes.length; i++,) ...[
+                      for (int i = 0; i < World.recipes.length; i++,) ...[
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             for (MapEntry<String, int> item
-                                in world.recipes[i].recipe.entries)
+                                in World.recipes[i].recipe.entries)
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -802,10 +803,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ],
                               ),
                             TextButton(
-                              child: renderItem(world.recipes[i].result,
+                              child: renderItem(World.recipes[i].result,
                                   width: 30, height: 30),
                               onPressed: () {
-                                world.craft(player, world.recipes[i]);
+                                world.craft(player, World.recipes[i]);
                                 pss[player.code]!
                                     .advancementsAcheived
                                     .add(craftAdv);
@@ -943,8 +944,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: renderItem(cell.item, width: 30, height: 30),
                         ),
                         parseInlinedIcons(
-                          world.describePlaced(cell.item) +
-                              ' (have ${placer?.inv.where((element) => element.item == cell.item).fold<int>(0, (p, n) => p + n.count) ?? 'N/A'})',
+                          '${placer?.inv.where((element) => element.item == cell.item).fold<int>(0, (p, n) => p + n.count) ?? 'N/A'}',
                         ),
                       ],
                       mainAxisSize: MainAxisSize.min,

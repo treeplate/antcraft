@@ -8,12 +8,25 @@ import 'cgis_client.dart';
 class World {
   final Map<IntegerOffset, Map<EntityType, List<Entity>>> _entitiesByType = {};
 
-  final List<Recipe> recipes = const [
+  static const List<Recipe> recipes = [
     Recipe({iron: 1}, robot),
     Recipe({wood: 1, iron: 1}, miner),
     Recipe({wood: 1}, box),
     Recipe({wood: 1, iron: 2, dirt: 1}, planter),
+    Recipe({wood: 1, iron: 3}, chopper),
   ];
+
+  static Map<String, Entity Function(double, double, IntegerOffset, Positioned)>
+      placingTypes = {
+    wood: (dx, dy, room, target) => Table(dx, dy, room, null),
+    robot: (dx, dy, room, target) => Robot(dx, dy, room, target, null),
+    miner: (dx, dy, room, target) => Miner(dx, dy, room, null),
+    box: (dx, dy, room, target) => Box(
+        dx, dy, room, List.generate(10 * 8, (i) => ItemStack(0, null)), null),
+    planter: (dx, dy, room, target) => Planter(dx, dy, room, null, false, null),
+    chopper: (dx, dy, room, target) => Chopper(dx, dy, room, null),
+    dirt: (dx, dy, room, target) => Dirt(dx, dy, room, null)
+  };
 
   bool cgisMenuActive;
 
@@ -241,6 +254,23 @@ class World {
         }
         if (!planter.needsRobot && planter.robot != null) {
           assert(false);
+        }
+      } else if (entity.value is Chopper) {
+        for (Tree tree in _entitiesByType.entries
+            .map((e) =>
+                MapEntry(e.key, e.value.values.expand((element) => element)))
+            .expand((e) => e.value)
+            .whereType<Tree>()
+            .where((tree) => colliding(Offset(tree.dx, tree.dy), 3,
+                Offset(entity.value.dx, entity.value.dy), 3))
+            .toList()) {
+          _entitiesByType[tree.room]![tree.type]!.remove(tree);
+          int i = 0;
+          while (i < 4) {
+            _placePrebuilt(
+                CollectibleWood(tree.dx, tree.dy - 6, tree.room, null));
+            i++;
+          }
         }
       } else if (entity.value is Sapling) {
         Sapling sapling = entity.value as Sapling;
@@ -565,28 +595,6 @@ class World {
     return IntegerOffset(to.x, to.y - 1);
   }
 
-  String describePlaced(String item) {
-    if (item == wood) {
-      return 'Crafing Table';
-    }
-    if (item == robot) {
-      return '{$wood}Collector';
-    }
-    if (item == miner) {
-      return 'Ore Miner';
-    }
-    if (item == dirt) {
-      return 'Dirt';
-    }
-    if (item == box) {
-      return 'Item Container';
-    }
-    if (item == planter) {
-      return 'Automatic{entity.${EntityType.sapling.name}}Planter';
-    }
-    return 'Unknown placeable $item';
-  }
-
   void genRoom(IntegerOffset room) {
     _rooms[room.x]![room.y] = Room(
       (_ores..shuffle()).first,
@@ -688,17 +696,6 @@ class Room {
 }
 
 enum SlotKey { x0y0, x0y1, x1y0, x1y1 }
-
-Map<String, Entity Function(double, double, IntegerOffset, Positioned)>
-    placingTypes = {
-  wood: (dx, dy, room, target) => Table(dx, dy, room, null),
-  robot: (dx, dy, room, target) => Robot(dx, dy, room, target, null),
-  miner: (dx, dy, room, target) => Miner(dx, dy, room, null),
-  box: (dx, dy, room, target) =>
-      Box(dx, dy, room, List.generate(10 * 8, (i) => ItemStack(0, null)), null),
-  planter: (dx, dy, room, target) => Planter(dx, dy, room, null, false, null),
-  dirt: (dx, dy, room, target) => Dirt(dx, dy, room, null)
-};
 
 class Recipe {
   final Map<String, int> recipe;
@@ -829,6 +826,23 @@ class Planter extends Interacter {
 
   @override
   EntityType get type => EntityType.planter;
+}
+
+class Chopper extends Entity {
+  Chopper(
+    double dx,
+    double dy,
+    IntegerOffset room,
+    int? codeArg,
+  ) : super(dx, dy, room, codeArg);
+
+  @override
+  Chopper copy() {
+    return Chopper(dx, dy, room, code);
+  }
+
+  @override
+  EntityType get type => EntityType.chopper;
 }
 
 class Sapling extends Entity {

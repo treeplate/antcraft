@@ -169,7 +169,7 @@ void main() {
     );
     world.mine(p, () {});
     await tester.pump(const Duration(seconds: 2));
-    world.craft(p, world.recipes[0]);
+    world.craft(p, World.recipes[0]);
     expect(p.hasItem(robot, 1), true);
     world.place(p, robot);
     expect(p.hasItem(robot, 1), false);
@@ -204,7 +204,7 @@ void main() {
     world.interact(p);
     world.mine(p, () {});
     await tester.pump(const Duration(seconds: 2));
-    world.craft(p, world.recipes[0]);
+    world.craft(p, World.recipes[0]);
     world.place(p, robot);
     IntegerOffset robotRoom = world.entities.entries
         .expand((element) => element.value

@@ -279,6 +279,12 @@ Widget renderItem(String? optionalItem,
       height: height,
     );
   }
+  if (item == chopper) {
+    return ChopperRenderer(
+      width: width,
+      height: height,
+    );
+  }
   if (item == dirt) {
     return DirtRenderer(
       width: width,
@@ -322,6 +328,8 @@ Widget renderEntity(EntityType entity,
       return BoxRenderer(width: width, height: height, ghost: ghost);
     case EntityType.planter:
       return PlanterRenderer(width: width, height: height, ghost: ghost);
+    case EntityType.chopper:
+      return ChopperRenderer(width: width, height: height, ghost: ghost);
   }
 }
 
@@ -362,6 +370,29 @@ class PlanterRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       'images/auto-planter.png',
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.none,
+      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    );
+  }
+}
+
+class ChopperRenderer extends StatelessWidget {
+  const ChopperRenderer({
+    Key? key,
+    required this.width,
+    required this.height,
+    this.ghost = false,
+  }) : super(key: key);
+  final double width;
+  final double height;
+  final bool ghost;
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'images/auto-chopper.png',
       width: width,
       height: height,
       fit: BoxFit.cover,

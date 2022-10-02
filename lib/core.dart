@@ -6,6 +6,7 @@ const String robot = 'crafted.robot';
 const String miner = 'crafted.miner';
 const String box = 'crafted.box';
 const String planter = 'crafted.planter';
+const String chopper = 'crafted.chopper';
 
 enum EntityType {
   table,
@@ -18,6 +19,7 @@ enum EntityType {
   tree,
   player,
   planter,
+  chopper,
 }
 
 class ItemStack {
