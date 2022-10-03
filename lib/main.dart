@@ -696,6 +696,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: 30,
                   height: 30,
                   isMe: entity.code == player.code,
+                  borderColor: gh?.code == entity.code
+                      ? Colors.lightGreen
+                      : yh?.code == entity.code
+                          ? Colors.lime
+                          : Colors.transparent,
                 ),
               ),
             ],
@@ -718,6 +723,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         width: 30,
                         height: 30,
                         ghost: true,
+                        borderColor: gh?.code == entity2.code
+                            ? Colors.lightGreen
+                            : yh?.code == entity2.code
+                                ? Colors.lime
+                                : Colors.transparent,
                         isMe: entity2.code == player.code,
                       ),
                   ],
@@ -750,51 +760,54 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             if (player.interacting is Antenna)
               Center(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: world.entities.entries
-                      .expand((element) => element.value)
-                      .whereType<Robot>()
-                      .map(
-                        (e) => Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            parseInlinedIcons(
-                              '{$robot}id ${e.code} destination:',
-                            ),
-                            DropdownButton(
-                              items: world.entities.entries
-                                  .expand((element) => element.value)
-                                  .map(
-                                    (e2) => DropdownMenuItem(
-                                      value: e2,
-                                      child: parseInlinedIcons(
-                                          '{entity.${e2.type}}id ${e2.code}'),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (e2) {
-                                world.assignTo(player, e, e2 as Entity);
-                              },
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                gh = e;
-                                yh = e.target is Entity
-                                    ? e.target as Entity
-                                    : null;
-                              },
-                              child: Text(gh == e
-                                  ? 'Highlight destination if it changed'
-                                  : 'Highlight'),
-                            )
-                          ],
-                        ),
-                      )
-                      .toList(),
+                child: Container(
+                  color: Colors.black,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: world.entities.entries
+                        .expand((element) => element.value)
+                        .whereType<Robot>()
+                        .map(
+                          (e) => Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              parseInlinedIcons(
+                                '{$robot}id ${e.code} destination:',
+                              ),
+                              DropdownButton(
+                                items: world.entities.entries
+                                    .expand((element) => element.value)
+                                    .map(
+                                      (e2) => DropdownMenuItem(
+                                        value: e2,
+                                        child: parseInlinedIcons(
+                                            '{entity.${e2.type.name}}id ${e2.code}'),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (e2) {
+                                  world.assignTo(player, e, e2 as Entity);
+                                },
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  gh = e;
+                                  yh = e.target is Entity
+                                      ? e.target as Entity
+                                      : null;
+                                },
+                                child: Text(gh == e
+                                    ? 'Highlight destination if it changed'
+                                    : 'Highlight'),
+                              )
+                            ],
+                          ),
+                        )
+                        .toList(),
+                  ),
                 ),
               ),
             if (player.interacting is Table)

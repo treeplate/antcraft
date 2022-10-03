@@ -56,20 +56,26 @@ class WoodRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/wood.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-    );
+    return ColoredBox(
+        color: borderColor,
+        child: Padding(
+            padding: const EdgeInsets.all(1.0),
+            child: Image.asset(
+              'images/wood.png',
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.none,
+              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+            )));
   }
 }
 
@@ -79,20 +85,26 @@ class TableRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/placed-wood.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-    );
+    return ColoredBox(
+        color: borderColor,
+        child: Padding(
+            padding: const EdgeInsets.all(1.0),
+            child: Image.asset(
+              'images/placed-wood.png',
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.none,
+              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+            )));
   }
 }
 
@@ -233,6 +245,7 @@ Widget renderItem(String? optionalItem,
           (element) => element.name == item.substring(item.indexOf('.') + 1)),
       height: height,
       width: width,
+      borderColor: Colors.transparent,
     );
   }
   if (item.contains('.') && item.substring(0, item.indexOf('.')) == 'ore') {
@@ -307,37 +320,50 @@ Widget renderEntity(EntityType entity,
     {required double width,
     required double height,
     bool ghost = false,
-    bool isMe = false}) {
+    bool isMe = false,
+    required Color borderColor}) {
   switch (entity) {
     case EntityType.miner:
-      return MinerRenderer(width: width, height: height, ghost: ghost);
+      return MinerRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.dirt:
-      return DirtRenderer(width: width, height: height, ghost: ghost);
+      return DirtRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.robot:
-      return RobotRenderer(width: width, height: height, ghost: ghost);
+      return RobotRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.table:
-      return TableRenderer(width: width, height: height, ghost: ghost);
+      return TableRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.collectibleWood:
-      return WoodRenderer(width: width, height: height, ghost: ghost);
+      return WoodRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.sapling:
-      return SaplingRenderer(width: width, height: height, ghost: ghost);
+      return SaplingRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.tree:
-      return TreeRenderer(width: width, height: height, ghost: ghost);
+      return TreeRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.player:
       return PlayerRenderer(
         width: width,
         height: height,
         ghost: ghost,
+        borderColor: borderColor,
         isMe: isMe,
       );
     case EntityType.box:
-      return BoxRenderer(width: width, height: height, ghost: ghost);
+      return BoxRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.planter:
-      return PlanterRenderer(width: width, height: height, ghost: ghost);
+      return PlanterRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.chopper:
-      return ChopperRenderer(width: width, height: height, ghost: ghost);
+      return ChopperRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.antenna:
-      return AntennaRenderer(width: width, height: height, ghost: ghost);
+      return AntennaRenderer(
+          width: width, height: height, ghost: ghost, borderColor: borderColor);
   }
 }
 
@@ -347,10 +373,12 @@ class BoxRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
     return Image.asset(
@@ -370,10 +398,12 @@ class PlanterRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
     return Image.asset(
@@ -393,10 +423,12 @@ class ChopperRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
     return Image.asset(
@@ -416,10 +448,12 @@ class AntennaRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
     return Image.asset(
@@ -439,26 +473,35 @@ class PlayerRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
     required this.isMe,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   final bool isMe;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-          color: isMe
-              ? ghost
-                  ? Colors.red
-                  : Colors.green
-              : ghost
-                  ? Colors.yellow.withAlpha(128)
-                  : Colors.yellow),
+    return ColoredBox(
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: isMe
+                ? ghost
+                    ? Colors.red
+                    : Colors.green
+                : ghost
+                    ? Colors.yellow.withAlpha(128)
+                    : Colors.yellow,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -469,20 +512,26 @@ class RobotRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/robot.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-    );
+    return ColoredBox(
+        color: borderColor,
+        child: Padding(
+            padding: const EdgeInsets.all(1.0),
+            child: Image.asset(
+              'images/robot.png',
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.none,
+              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+            )));
   }
 }
 
@@ -492,19 +541,27 @@ class MinerRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/miner.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    return ColoredBox(
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          'images/miner.png',
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
     );
   }
 }
@@ -515,20 +572,26 @@ class SaplingRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/tree-sapling.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-    );
+    return ColoredBox(
+        color: borderColor,
+        child: Padding(
+            padding: const EdgeInsets.all(1.0),
+            child: Image.asset(
+              'images/tree-sapling.png',
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.none,
+              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+            )));
   }
 }
 
@@ -538,20 +601,26 @@ class TreeRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/tree-top.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-    );
+    return ColoredBox(
+        color: borderColor,
+        child: Padding(
+            padding: const EdgeInsets.all(1.0),
+            child: Image.asset(
+              'images/tree-top.png',
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.none,
+              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+            )));
   }
 }
 
@@ -561,19 +630,25 @@ class DirtRenderer extends StatelessWidget {
     required this.width,
     required this.height,
     this.ghost = false,
+    this.borderColor = Colors.transparent,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/dirt.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-    );
+    return ColoredBox(
+        color: borderColor,
+        child: Padding(
+            padding: const EdgeInsets.all(1.0),
+            child: Image.asset(
+              'images/dirt.png',
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.none,
+              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+            )));
   }
 }
