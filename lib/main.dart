@@ -520,7 +520,9 @@ class _MyHomePageState extends State<MyHomePage> {
             !pss[rplayer.code]!.controlsDialogActive;
         placer = rplayer;
       }
-      if (event.logicalKey == player.inventory && event is KeyDownEvent) {
+      if (event.logicalKey == player.inventory &&
+          event is KeyDownEvent &&
+          !pss[rplayer.code]!.inventoryActive) {
         pss[rplayer.code]!.controlsDialogActive = false;
         pss[rplayer.code]!.advancementsDialogActive = false;
         pss[rplayer.code]!.inventoryActive = false;
