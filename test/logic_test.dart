@@ -17,57 +17,56 @@ void main() {
         LogicalKeyboardKey.keyE,
         LogicalKeyboardKey.keyF,
         LogicalKeyboardKey.keyQ,
-        LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
       ),
     );
-    world.tick();
+    world.tick(() {});
     expect(p.dx, 4);
     expect(p.dy, 4);
     expect(p.room.x, -1);
     expect(p.room.y, -1);
-    world.tick();
+    world.tick(() {});
     expect(p.dx, 4);
     expect(p.dy, 4);
     world.left(p);
-    world.tick();
+    world.tick(() {});
     expect(p.dx, 3);
     expect(p.dy, 4);
-    world.tick();
+    world.tick(() {});
     expect(p.dx, 2);
     expect(p.dy, 4);
     world.right(p);
-    world.tick();
+    world.tick(() {});
     expect(p.dx, 2);
     expect(p.dy, 4);
     world.right(p);
-    world.tick();
+    world.tick(() {});
     expect(p.dx, 3);
     expect(p.dy, 4);
-    world.tick();
-    world.tick();
+    world.tick(() {});
+    world.tick(() {});
     expect(p.dx, 1);
     expect(p.dy, 4);
     expect(p.room.x, 0);
     expect(p.room.y, -1);
     world.left(p);
     world.down(p);
-    world.tick();
+    world.tick(() {});
     expect(p.dx, 1);
     expect(p.dy, 1);
     expect(p.room.x, 0);
     expect(p.room.y, 0);
-    world.tick();
+    world.tick(() {});
     expect(p.dx, 1);
     expect(p.dy, 2);
     world.up(p);
-    world.tick();
+    world.tick(() {});
     expect(p.dx, 1);
     expect(p.dy, 2);
     world.up(p);
-    world.tick();
-    world.tick();
+    world.tick(() {});
+    world.tick(() {});
     expect(p.dx, 1);
     expect(p.dy, 4);
     expect(p.room.x, 0);
@@ -84,17 +83,16 @@ void main() {
         LogicalKeyboardKey.keyE,
         LogicalKeyboardKey.keyF,
         LogicalKeyboardKey.keyQ,
-        LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
       ),
     );
     expect(p.hasItem(wood, 1), false);
-    world.tick();
+    world.tick(() {});
     world.left(p);
     world.up(p);
-    world.tick();
-    world.tick();
+    world.tick(() {});
+    world.tick(() {});
     world.right(p);
     world.down(p);
     expect(p.hasItem(wood, 1), true);
@@ -121,12 +119,11 @@ void main() {
         LogicalKeyboardKey.keyE,
         LogicalKeyboardKey.keyF,
         LogicalKeyboardKey.keyQ,
-        LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
       ),
     );
-    world.tick();
+    world.tick(() {});
     expect(p.hasItem(iron, 1), false);
     bool mined = false;
     world.mine(p, () {
@@ -148,7 +145,6 @@ void main() {
         LogicalKeyboardKey.keyE,
         LogicalKeyboardKey.keyF,
         LogicalKeyboardKey.keyQ,
-        LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
       ),
@@ -156,11 +152,11 @@ void main() {
     expect(world.entities.entries.map((kv) => kv.value).expand((e) => e),
         everyElement(isNot(isA<Robot>())));
     expect(p.hasItem(robot, 1), false);
-    world.tick();
+    world.tick(() {});
     world.left(p);
     world.up(p);
-    world.tick();
-    world.tick();
+    world.tick(() {});
+    world.tick(() {});
     world.right(p);
     world.down(p);
     expect(world.place(p, wood), true);
@@ -188,16 +184,15 @@ void main() {
         LogicalKeyboardKey.keyE,
         LogicalKeyboardKey.keyF,
         LogicalKeyboardKey.keyQ,
-        LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.keyK,
       ),
     );
-    world.tick();
+    world.tick(() {});
     world.left(p);
     world.up(p);
-    world.tick();
-    world.tick();
+    world.tick(() {});
+    world.tick(() {});
     world.right(p);
     world.down(p);
     world.place(p, wood);

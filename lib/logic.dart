@@ -180,7 +180,7 @@ class World {
     _entitiesByType[room]![entity.type]!.add(entity);
   }
 
-  void tick() {
+  void tick(void Function() autoCycle) {
     for (Player player in _entitiesByType.entries
         .map(
             (e) => MapEntry(e.key, e.value.values.expand((element) => element)))
@@ -249,6 +249,9 @@ class World {
             .where((tree) => colliding(Offset(tree.dx, tree.dy), 3,
                 Offset(entity.value.dx, entity.value.dy), 3))
             .toList()) {
+          if (tree.autoPlanted) {
+            autoCycle();
+          }
           _entitiesByType[tree.room]![tree.type]!.remove(tree);
           int i = 0;
           while (i < 4) {
@@ -262,7 +265,8 @@ class World {
         sapling.growth--;
         if (sapling.growth == 0) {
           _entitiesByType[entityRoom]![sapling.type]!.remove(sapling);
-          _placePrebuilt(Tree(sapling.dx, sapling.dy, entityRoom, null));
+          _placePrebuilt(Tree(
+              sapling.dx, sapling.dy, entityRoom, null, sapling.autoPlanted));
         }
       } else if (entity.value is Storer) {
         Storer storer = entity.value as Storer;
@@ -302,8 +306,8 @@ class World {
                     Offset(storer.dx, storer.dy), 3)) {
               if (storer.inv >= 3) {
                 storer.inv -= 3;
-                _placePrebuilt(
-                    Sapling(planter.dx, planter.dy, 360, entityRoom, null));
+                _placePrebuilt(Sapling(
+                    planter.dx, planter.dy, 360, entityRoom, null, true));
               }
             }
           }
@@ -649,7 +653,7 @@ class World {
     bool sA = player.takeItem(wood, 3);
     assert(sA);
     _placePrebuilt(Sapling(player.dx, player.dy, 360,
-        IntegerOffset(player.room.x, player.room.y), null));
+        IntegerOffset(player.room.x, player.room.y), null, false));
     return true;
   }
 
@@ -871,14 +875,17 @@ class Antenna extends Interacter {
 }
 
 class Sapling extends Entity {
-  Sapling(double dx, double dy, this.growth, IntegerOffset room, int? codeArg)
+  final bool autoPlanted;
+
+  Sapling(double dx, double dy, this.growth, IntegerOffset room, int? codeArg,
+      this.autoPlanted)
       : super(dx, dy, room, codeArg);
 
   int growth;
 
   @override
   Sapling copy() {
-    return Sapling(dx, dy, growth, room, code);
+    return Sapling(dx, dy, growth, room, code, autoPlanted);
   }
 
   @override
@@ -886,12 +893,14 @@ class Sapling extends Entity {
 }
 
 class Tree extends Entity {
-  Tree(double dx, double dy, IntegerOffset room, int? codeArg)
+  final bool autoPlanted;
+
+  Tree(double dx, double dy, IntegerOffset room, int? codeArg, this.autoPlanted)
       : super(dx, dy, room, codeArg);
 
   @override
   Tree copy() {
-    return Tree(dx, dy, room, code);
+    return Tree(dx, dy, room, code, autoPlanted);
   }
 
   @override
@@ -1069,7 +1078,6 @@ class KeybindSet {
   LogicalKeyboardKey interact; // f
   LogicalKeyboardKey plant; // q
   LogicalKeyboardKey mine; // v
-  LogicalKeyboardKey placePrefix; // c
   LogicalKeyboardKey openControlsDialog; // <tab>
 
   KeybindSet(
@@ -1080,7 +1088,6 @@ class KeybindSet {
     this.inventory,
     this.interact,
     this.plant,
-    this.placePrefix,
     this.mine,
     this.openControlsDialog,
   );

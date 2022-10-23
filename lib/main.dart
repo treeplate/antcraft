@@ -205,7 +205,6 @@ class _MyHomePageState extends State<MyHomePage> {
         LogicalKeyboardKey.keyE,
         LogicalKeyboardKey.keyF,
         LogicalKeyboardKey.keyQ,
-        LogicalKeyboardKey.keyC,
         LogicalKeyboardKey.keyV,
         LogicalKeyboardKey.tab,
       ),
@@ -220,7 +219,6 @@ class _MyHomePageState extends State<MyHomePage> {
           LogicalKeyboardKey.keyO,
           LogicalKeyboardKey.semicolon,
           LogicalKeyboardKey.keyU,
-          LogicalKeyboardKey.period,
           LogicalKeyboardKey.slash,
           LogicalKeyboardKey.keyY,
         ),
@@ -345,19 +343,19 @@ class _MyHomePageState extends State<MyHomePage> {
       spi,
     ),
     Control(
-      'Open/Close {entity.table}',
-      'openTable',
+      'Interact',
+      'interact',
       gpot,
       spot,
     ),
     Control(
-      'Plant {entity.sapling} / Chop {entity.tree} (add <shift>)',
+      'Plant {entity.sapling}',
       'plant',
       getPlayerPlant,
       setPlayerPlant,
     ),
     Control(
-      'Mine ore',
+      'Mine ore / Chop tree',
       'mine',
       gpm,
       spm,
@@ -397,9 +395,13 @@ class _MyHomePageState extends State<MyHomePage> {
     'Logging',
     'Chop down a {entity.tree} (using the mine key). You get 4 {$wood} for that.',
   );
-  final Advancement getEveryItemAdv = Advancement(
-    'The Ultimate Challenge',
-    'Have every item in the game (there are 7 in total: {$wood} {$stone} {$dirt} {$iron} {$robot} {$miner} {$box}).',
+  final Advancement targetPlanter = Advancement(
+    'Configuration',
+    'Use a {$antenna} to change the destination of a {$robot} to a {$planter}',
+  );
+  final Advancement autoChopAdv = Advancement(
+    'Automation',
+    'Automatically plant and chop a {entity.tree}',
   );
   late final List<Advancement> advancements = [
     collectWoodAdv,
@@ -409,7 +411,8 @@ class _MyHomePageState extends State<MyHomePage> {
     collectStoredAdv,
     plantAdv,
     chopAdv,
-    getEveryItemAdv,
+    targetPlanter,
+    autoChopAdv,
   ];
 
   Control? changingControl;
@@ -545,9 +548,6 @@ class _MyHomePageState extends State<MyHomePage> {
       if (player.hasItem(wood, 1)) {
         pss[player.code]!.advancementsAcheived.add(collectWoodAdv);
       }
-      if (player.inv.map((e) => e.item).toSet().length == 8) {
-        pss[player.code]!.advancementsAcheived.add(getEveryItemAdv);
-      }
       if (player.collectedStored) {
         pss[player.code]!.advancementsAcheived.add(collectStoredAdv);
       }
@@ -559,7 +559,13 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!won) {
       frames++;
     }
-    setState(world.tick);
+    setState(() {
+      world.tick(() {
+        pss.forEach((key, value) {
+          value.advancementsAcheived.add(autoChopAdv);
+        });
+      });
+    });
   });
   _MyHomePageState() {
     movement;
@@ -760,67 +766,76 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 ),
               ),
-            //if (player.interacting is Antenna)
-            Center(
-              child: Container(
-                color: Colors.black,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: world.entities.entries
-                      .expand((element) => element.value)
-                      .whereType<Robot>()
-                      .map(
-                        (e) => Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            parseInlinedIcons(
-                              '{$robot}id ${e.code} destination:',
-                            ),
-                            DropdownButton(
-                              value: e.target,
-                              items: world.entities.entries
-                                  .expand((element) => element.value)
-                                  .map(
-                                    (e2) => DropdownMenuItem(
-                                      value: e2,
-                                      child: parseInlinedIcons(
-                                          '{entity.${e2.type.name}}id ${e2.code}'),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (e2) {
-                                world.assignTo(player, e, e2 as Entity);
-                              },
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                gh = e;
-                                yh = e.target is Entity
-                                    ? e.target as Entity
-                                    : null;
-                              },
-                              child: Text(gh == e
-                                  ? 'Highlight destination if it changed'
-                                  : 'Highlight'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                world.toggleExploreForWood(player, e);
-                              },
-                              child: Text(e.exploreForWood
-                                  ? 'Don\'t exit room to find {$wood}'
-                                  : 'Exit room to find {$wood} if there isn\'t any in the current room'),
-                            ),
-                          ],
-                        ),
-                      )
-                      .toList(),
+            if (player.interacting is Antenna)
+              Center(
+                child: Container(
+                  color: Colors.black,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[const Text('Robots')] +
+                        world.entities.entries
+                            .expand((element) => element.value)
+                            .whereType<Robot>()
+                            .map(
+                              (e) => Row(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  parseInlinedIcons(
+                                    '{$robot}id ${e.code} destination:',
+                                  ),
+                                  DropdownButton(
+                                    value: e.target,
+                                    items: world.entities.entries
+                                        .expand((element) => element.value)
+                                        .map(
+                                          (e2) => DropdownMenuItem(
+                                            value: (e.target as Entity).code ==
+                                                    e2.code
+                                                ? e.target
+                                                : e2,
+                                            child: parseInlinedIcons(
+                                                '{entity.${e2.type.name}}id ${e2.code}'),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: (e2) {
+                                      world.assignTo(player, e, e2 as Entity);
+                                      if (e2 is Planter) {
+                                        pss[player.code]!
+                                            .advancementsAcheived
+                                            .add(targetPlanter);
+                                      }
+                                    },
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      gh = e;
+                                      yh = e.target is Entity
+                                          ? e.target as Entity
+                                          : null;
+                                    },
+                                    child: Text(gh == e
+                                        ? 'Highlight destination if it changed'
+                                        : 'Highlight'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      world.toggleExploreForWood(player, e);
+                                    },
+                                    child: parseInlinedIcons(e.exploreForWood
+                                        ? 'Don\'t exit room to find {$wood}'
+                                        : 'Exit room to find {$wood} if there isn\'t any in the current room'),
+                                  ),
+                                ],
+                              ),
+                            )
+                            .toList(),
+                  ),
                 ),
               ),
-            ),
             if (player.interacting is Table)
               Center(
                 child: Container(
