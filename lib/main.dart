@@ -760,58 +760,67 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 ),
               ),
-            if (player.interacting is Antenna)
-              Center(
-                child: Container(
-                  color: Colors.black,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: world.entities.entries
-                        .expand((element) => element.value)
-                        .whereType<Robot>()
-                        .map(
-                          (e) => Row(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              parseInlinedIcons(
-                                '{$robot}id ${e.code} destination:',
-                              ),
-                              DropdownButton(
-                                items: world.entities.entries
-                                    .expand((element) => element.value)
-                                    .map(
-                                      (e2) => DropdownMenuItem(
-                                        value: e2,
-                                        child: parseInlinedIcons(
-                                            '{entity.${e2.type.name}}id ${e2.code}'),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (e2) {
-                                  world.assignTo(player, e, e2 as Entity);
-                                },
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  gh = e;
-                                  yh = e.target is Entity
-                                      ? e.target as Entity
-                                      : null;
-                                },
-                                child: Text(gh == e
-                                    ? 'Highlight destination if it changed'
-                                    : 'Highlight'),
-                              )
-                            ],
-                          ),
-                        )
-                        .toList(),
-                  ),
+            //if (player.interacting is Antenna)
+            Center(
+              child: Container(
+                color: Colors.black,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: world.entities.entries
+                      .expand((element) => element.value)
+                      .whereType<Robot>()
+                      .map(
+                        (e) => Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            parseInlinedIcons(
+                              '{$robot}id ${e.code} destination:',
+                            ),
+                            DropdownButton(
+                              value: e.target,
+                              items: world.entities.entries
+                                  .expand((element) => element.value)
+                                  .map(
+                                    (e2) => DropdownMenuItem(
+                                      value: e2,
+                                      child: parseInlinedIcons(
+                                          '{entity.${e2.type.name}}id ${e2.code}'),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (e2) {
+                                world.assignTo(player, e, e2 as Entity);
+                              },
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                gh = e;
+                                yh = e.target is Entity
+                                    ? e.target as Entity
+                                    : null;
+                              },
+                              child: Text(gh == e
+                                  ? 'Highlight destination if it changed'
+                                  : 'Highlight'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                world.toggleExploreForWood(player, e);
+                              },
+                              child: Text(e.exploreForWood
+                                  ? 'Don\'t exit room to find {$wood}'
+                                  : 'Exit room to find {$wood} if there isn\'t any in the current room'),
+                            ),
+                          ],
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
+            ),
             if (player.interacting is Table)
               Center(
                 child: Container(
