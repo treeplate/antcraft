@@ -401,7 +401,7 @@ class _MyHomePageState extends State<MyHomePage> {
   );
   final Advancement autoChopAdv = Advancement(
     'Automation',
-    'Automatically plant and chop a {entity.tree}',
+    'Automatically plant and chop a {entity.tree} (a {$chopper} chops trees)',
   );
   late final List<Advancement> advancements = [
     collectWoodAdv,
