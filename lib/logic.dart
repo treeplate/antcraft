@@ -17,7 +17,7 @@ class World {
     Recipe({iron: 1}, antenna),
   ];
 
-  static Map<String, Entity Function(double, double, IntegerOffset, Positioned)>
+  Map<String, Entity Function(double, double, IntegerOffset, Positioned)>
       placingTypes = {
     wood: (dx, dy, room, target) => Table(dx, dy, room, null),
     robot: (dx, dy, room, target) => Robot(dx, dy, room, target, null, true),
@@ -31,8 +31,13 @@ class World {
   };
 
   bool cgisMenuActive;
+  bool easterMode;
 
-  World(this.random, this.cgisMenuActive);
+  World(this.random, this.cgisMenuActive, {required this.easterMode}) {
+    if (easterMode) {
+      placingTypes.remove(wood);
+    }
+  }
   double screenWidth = 10;
   double screenHeight = 10;
   final Map<int, Map<int, Room>> _rooms = {};
@@ -95,7 +100,7 @@ class World {
             .singleWhere((element) => element.value.code == fakePlayer.code)
             .value as Player;
     if (!_recentMined) {
-      String ore = roomAt(player.room).oreAt(player.dx, player.dy);
+      String ore = roomAt(player.room)!.oreAt(player.dx, player.dy);
       if (player.newItem(ore, 1) == 0) {
         _recentMined = true;
         callback();
@@ -159,10 +164,11 @@ class World {
   }
 
   bool place(Player fakePlayer, String type) {
-    Player player =
+    Iterable<MapEntry<Offset, Entity>> players =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
-            .singleWhere((element) => element.value.code == fakePlayer.code)
-            .value as Player;
+            .where((element) => element.value.code == fakePlayer.code);
+    if (players.isEmpty) throw const FormatException('player not updated');
+    Player player = players.single.value as Player;
     if (player.takeItem(type, 1)) {
       _placePrebuilt(
         placingTypes[type]!(player.dx / 1, player.dy / 1,
@@ -178,7 +184,12 @@ class World {
     _entitiesByType[room] ??= {};
     _entitiesByType[room]![entity.type] ??= [];
     _entitiesByType[room]![entity.type]!.add(entity);
+    if (roomAt(room) == null) {
+      genRoom(room);
+    }
   }
+
+  Robot? bun;
 
   void tick(void Function() autoCycle) {
     for (Player player in _entitiesByType.entries
@@ -230,6 +241,14 @@ class World {
                     IntegerOffset(player.room.x, player.room.y)]![pickup.type]!
                 .remove(pickup);
             assert(success);
+            print('$easterMode $bun');
+            if (easterMode && bun == null) {
+              print('moo');
+              bun = Robot(player.dx, player.dy, player.room, player, null, true);
+              _placePrebuilt(
+                bun!,
+              );
+            }
           }
         }
       }
@@ -240,7 +259,7 @@ class World {
         .expand((e) => e.value.map((e2) => MapEntry(e.key, e2)))
         .toList()) {
       IntegerOffset entityRoom = entity.key;
-      if (entity.value is Chopper) {
+      if (entity.value is Chopper && !easterMode) {
         for (Tree tree in _entitiesByType.entries
             .map((e) =>
                 MapEntry(e.key, e.value.values.expand((element) => element)))
@@ -285,7 +304,7 @@ class World {
           if (player.room.x == entityRoom.x &&
               player.room.y == entityRoom.y &&
               colliding(Offset(player.dx, player.dy), 3,
-                  Offset(storer.dx, storer.dy), 3)) {
+                  Offset(storer.dx, storer.dy), 3) && !easterMode) {
             bool pre = storer.inv == 0;
             storer.inv = player.newItem(storer.storedItem(room), storer.inv);
             if (!pre && storer.inv == 0 && player is Player) {
@@ -293,7 +312,8 @@ class World {
             }
           }
         }
-        if (storer.storedItem(_rooms[entityRoom.x]![entityRoom.y]!) == wood) {
+        if (storer.storedItem(_rooms[entityRoom.x]![entityRoom.y]!) == wood &&
+            !easterMode) {
           for (Planter planter in _entitiesByType.entries
               .map((e) =>
                   MapEntry(e.key, e.value.values.expand((element) => element)))
@@ -324,11 +344,17 @@ class World {
           }
         } else if (storer is Robot) {
           Robot robot = storer;
+          Positioned target = robot.target;
+          if (target is Entity &&
+              !(_entitiesByType[target.room]?[target.type]?.contains(target) ??
+                  false)) {
+            robot.target = robot;
+          }
           for (CollectibleWood pickup in _atOfType(
                   entityRoom.x, entityRoom.y, EntityType.collectibleWood)
               .map((e) => e.value)
               .cast()) {
-            if (robot.inv < 3) {
+            if (robot.inv < 3 || easterMode) {
               if (colliding(
                 Offset(robot.dx, robot.dy),
                 3,
@@ -372,7 +398,7 @@ class World {
             }
           }
 
-          if (robot.inv < 3) {
+          if (robot.inv < 3 || easterMode) {
             if (_atOfType(
                     entityRoom.x, entityRoom.y, EntityType.collectibleWood)
                 .isEmpty) {
@@ -408,17 +434,17 @@ class World {
               honeRoom(robot.target.room.x, robot.target.room.y);
             }
           }
-          if (robot.dx < 0) {
+          if (robot.dx <= 0) {
             bool sA = _entitiesByType[entityRoom]![robot.type]!.remove(robot);
             assert(sA);
             _placePrebuilt(
               robot
-                ..dx = screenWidth.roundToDouble() - 1
+                ..dx = screenWidth.roundToDouble() - 4
                 ..room = IntegerOffset(entityRoom.x - 1, entityRoom.y),
             );
             entityRoom = IntegerOffset(entityRoom.x - 1, entityRoom.y);
           }
-          if (robot.dx > screenWidth) {
+          if (robot.dx >= screenWidth) {
             bool sA = _entitiesByType[entityRoom]![robot.type]!.remove(robot);
             assert(sA);
             _placePrebuilt(
@@ -428,17 +454,17 @@ class World {
             );
             entityRoom = IntegerOffset(entityRoom.x + 1, entityRoom.y);
           }
-          if (robot.dy < 0) {
+          if (robot.dy <= 0) {
             bool sA = _entitiesByType[entityRoom]![robot.type]!.remove(robot);
             assert(sA);
             _placePrebuilt(
               robot
-                ..dy = screenHeight.roundToDouble() - 1
+                ..dy = screenHeight.roundToDouble() - 4
                 ..room = IntegerOffset(entityRoom.x, entityRoom.y - 1),
             );
             entityRoom = IntegerOffset(entityRoom.x, entityRoom.y - 1);
           }
-          if (robot.dy > screenHeight) {
+          if (robot.dy >= screenHeight) {
             bool sA = _entitiesByType[entityRoom]![robot.type]!.remove(robot);
             assert(sA);
             _placePrebuilt(
@@ -454,6 +480,7 @@ class World {
 
   // fakePlayer.interacting must be a Table, and fakePlayer must also have all the materials for [recipe]
   bool craft(Player fakePlayer, Recipe recipe) {
+    if (easterMode) return false;
     Player player =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
             .singleWhere((element) => element.value.code == fakePlayer.code)
@@ -522,6 +549,7 @@ class World {
 
   // fakePlayer.interacting must be an Antenna
   bool assignTo(Player fakePlayer, Robot fakeRobot, Entity fakeDest) {
+    if (easterMode) return false;
     Player player =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
             .singleWhere((element) => element.value.code == fakePlayer.code)
@@ -542,6 +570,7 @@ class World {
 
   // fakePlayer.interacting must be an Antenna
   bool toggleExploreForWood(Player fakePlayer, Robot fakeRobot) {
+    if (easterMode) return false;
     Player player =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
             .singleWhere((element) => element.value.code == fakePlayer.code)
@@ -557,12 +586,12 @@ class World {
     return false;
   }
 
-  Room roomAt(IntegerOffset room) {
+  Room? roomAt(IntegerOffset room) {
     if (_rooms[room.x] == null) {
       _rooms[room.x] = {};
     }
     if (_rooms[room.x]![room.y] == null) {
-      genRoom(room);
+      return null;
     }
     return _rooms[room.x]![room.y]!;
   }
@@ -613,21 +642,22 @@ class World {
     _rooms[room.x]![room.y] = Room(
       (_ores..shuffle()).first,
       Offset(
-        (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
-        (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
+        (random.nextDouble() * (screenWidth - 4)).roundToDouble() + 1,
+        (random.nextDouble() * (screenHeight - 4)).roundToDouble() + 1,
       ),
       random.nextBool() ? stone : dirt,
     );
     _placePrebuilt(
       CollectibleWood(
-          (random.nextDouble() * (screenWidth - 3)).roundToDouble(),
-          (random.nextDouble() * (screenHeight - 3)).roundToDouble(),
+          (random.nextDouble() * (screenWidth - 4)).roundToDouble() + 1,
+          (random.nextDouble() * (screenHeight - 4)).roundToDouble() + 1,
           room,
           null),
     );
   }
 
   bool plant(Player fakePlayer) {
+    if (easterMode) return false;
     Player player =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
             .singleWhere((element) => element.value.code == fakePlayer.code)
@@ -635,7 +665,7 @@ class World {
     if (!player.hasItem(wood, 3)) {
       return false;
     }
-    if (roomAt(player.room).baseOre != dirt) {
+    if (roomAt(player.room)!.baseOre != dirt) {
       outer:
       {
         for (Dirt dirt
@@ -658,6 +688,7 @@ class World {
   }
 
   bool chop(Player fakePlayer) {
+    if (easterMode) return false;
     Player player =
         _atOfType(fakePlayer.room.x, fakePlayer.room.y, EntityType.player)
             .singleWhere((element) => element.value.code == fakePlayer.code)
@@ -720,9 +751,14 @@ class Recipe {
 }
 
 abstract class Entity extends Positioned {
+  static int nextCode = 0;
+
   Entity(double dx, double dy, IntegerOffset room, int? codeArg)
       : super(dx, dy, room) {
-    code = codeArg ?? hashCode;
+    code = codeArg ?? nextCode++;
+    if (codeArg == null) {
+      print('#$code: $this');
+    }
   }
   late final int code;
 

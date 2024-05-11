@@ -57,25 +57,29 @@ class WoodRenderer extends StatelessWidget {
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
+    required this.easterMode,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
   final Color borderColor;
+  final bool easterMode;
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-        color: borderColor,
-        child: Padding(
-            padding: const EdgeInsets.all(1.0),
-            child: Image.asset(
-              'images/wood.png',
-              width: width,
-              height: height,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.none,
-              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-            )));
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          easterMode ? 'images/egg.png' : 'images/wood.png',
+          width: width - 2,
+          height: height - 2,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
+    );
   }
 }
 
@@ -94,28 +98,36 @@ class TableRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-        color: borderColor,
-        child: Padding(
-            padding: const EdgeInsets.all(1.0),
-            child: Image.asset(
-              'images/placed-wood.png',
-              width: width,
-              height: height,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.none,
-              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-            )));
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          'images/placed-wood.png',
+          width: width - 2,
+          height: height - 2,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
+    );
   }
 }
 
-Row parseInlinedIcons(String text, [double size = 30]) {
+Row parseInlinedIcons(String text,
+    {double size = 30, required bool easterMode}) {
   List<Widget> result = [];
   StringBuffer buffer = StringBuffer();
   bool parsingKey = false;
   for (int rune in text.runes) {
     if (parsingKey) {
       if (rune == 0x7D) {
-        result.add(renderItem(buffer.toString(), width: size, height: size));
+        result.add(renderItem(
+          buffer.toString(),
+          width: size,
+          height: size,
+          easterMode: easterMode,
+        ));
         buffer = StringBuffer();
         parsingKey = false;
       } else {
@@ -135,7 +147,12 @@ Row parseInlinedIcons(String text, [double size = 30]) {
     }
   }
   if (parsingKey) {
-    result.add(renderItem(buffer.toString(), width: size, height: size));
+    result.add(renderItem(
+      buffer.toString(),
+      width: size,
+      height: size,
+      easterMode: easterMode,
+    ));
   } else {
     result.add(Text(
       buffer.toString(),
@@ -151,8 +168,13 @@ Row parseInlinedIcons(String text, [double size = 30]) {
 class InventoryWidget extends StatelessWidget {
   final List<ItemStack> inventory;
   final void Function(ItemStack)? callback;
-  const InventoryWidget({Key? key, required this.inventory, this.callback})
-      : super(key: key);
+  final bool easterMode;
+  const InventoryWidget({
+    Key? key,
+    required this.inventory,
+    this.callback,
+    required this.easterMode,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -188,6 +210,7 @@ class InventoryWidget extends StatelessWidget {
                                 e.item,
                                 width: imageSize / 1,
                                 height: imageSize / 1,
+                                easterMode: easterMode,
                               ),
                             ),
                             onTap: callback != null
@@ -231,7 +254,7 @@ class InventoryWidget extends StatelessWidget {
 }
 
 Widget renderItem(String? optionalItem,
-    {required double width, required double height}) {
+    {required double width, required double height, required bool easterMode}) {
   if (optionalItem == null) {
     return SizedBox(
       width: width,
@@ -246,6 +269,7 @@ Widget renderItem(String? optionalItem,
       height: height,
       width: width,
       borderColor: Colors.transparent,
+      easterMode: easterMode,
     );
   }
   if (item.contains('.') && item.substring(0, item.indexOf('.')) == 'ore') {
@@ -266,12 +290,14 @@ Widget renderItem(String? optionalItem,
     return WoodRenderer(
       height: height,
       width: width,
+      easterMode: easterMode,
     );
   }
   if (item == robot) {
     return RobotRenderer(
       width: width,
       height: height,
+      easterMode: easterMode,
     );
   }
   if (item == miner) {
@@ -321,7 +347,8 @@ Widget renderEntity(EntityType entity,
     required double height,
     bool ghost = false,
     bool isMe = false,
-    required Color borderColor}) {
+    required Color borderColor,
+    required bool easterMode}) {
   switch (entity) {
     case EntityType.miner:
       return MinerRenderer(
@@ -331,13 +358,21 @@ Widget renderEntity(EntityType entity,
           width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.robot:
       return RobotRenderer(
-          width: width, height: height, ghost: ghost, borderColor: borderColor);
+          width: width,
+          height: height,
+          ghost: ghost,
+          borderColor: borderColor,
+          easterMode: easterMode);
     case EntityType.table:
       return TableRenderer(
           width: width, height: height, ghost: ghost, borderColor: borderColor);
     case EntityType.collectibleWood:
       return WoodRenderer(
-          width: width, height: height, ghost: ghost, borderColor: borderColor);
+          width: width,
+          height: height,
+          ghost: ghost,
+          borderColor: borderColor,
+          easterMode: easterMode);
     case EntityType.sapling:
       return SaplingRenderer(
           width: width, height: height, ghost: ghost, borderColor: borderColor);
@@ -381,13 +416,19 @@ class BoxRenderer extends StatelessWidget {
   final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/box.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    return ColoredBox(
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          'images/box.png',
+          width: width - 2,
+          height: height - 2,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
     );
   }
 }
@@ -406,13 +447,19 @@ class PlanterRenderer extends StatelessWidget {
   final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/auto-planter.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    return ColoredBox(
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          'images/auto-planter.png',
+          width: width - 2,
+          height: height - 2,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
     );
   }
 }
@@ -431,13 +478,19 @@ class ChopperRenderer extends StatelessWidget {
   final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/auto-chopper.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    return ColoredBox(
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          'images/auto-chopper.png',
+          width: width - 2,
+          height: height - 2,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
     );
   }
 }
@@ -456,13 +509,19 @@ class AntennaRenderer extends StatelessWidget {
   final Color borderColor;
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'images/antenna.png',
-      width: width,
-      height: height,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.none,
-      opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+    return ColoredBox(
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          'images/antenna.png',
+          width: width - 2,
+          height: height - 2,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
     );
   }
 }
@@ -513,25 +572,29 @@ class RobotRenderer extends StatelessWidget {
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
+    required this.easterMode,
   }) : super(key: key);
   final double width;
   final double height;
   final bool ghost;
   final Color borderColor;
+  final bool easterMode;
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-        color: borderColor,
-        child: Padding(
-            padding: const EdgeInsets.all(1.0),
-            child: Image.asset(
-              'images/robot.png',
-              width: width,
-              height: height,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.none,
-              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-            )));
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          easterMode ? 'images/bun.png' : 'images/robot.png',
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
+    );
   }
 }
 
@@ -581,17 +644,19 @@ class SaplingRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-        color: borderColor,
-        child: Padding(
-            padding: const EdgeInsets.all(1.0),
-            child: Image.asset(
-              'images/tree-sapling.png',
-              width: width,
-              height: height,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.none,
-              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-            )));
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          'images/tree-sapling.png',
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
+    );
   }
 }
 
@@ -610,17 +675,19 @@ class TreeRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-        color: borderColor,
-        child: Padding(
-            padding: const EdgeInsets.all(1.0),
-            child: Image.asset(
-              'images/tree-top.png',
-              width: width,
-              height: height,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.none,
-              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-            )));
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          'images/tree-top.png',
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
+    );
   }
 }
 
@@ -639,16 +706,18 @@ class DirtRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-        color: borderColor,
-        child: Padding(
-            padding: const EdgeInsets.all(1.0),
-            child: Image.asset(
-              'images/dirt.png',
-              width: width,
-              height: height,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.none,
-              opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
-            )));
+      color: borderColor,
+      child: Padding(
+        padding: const EdgeInsets.all(1.0),
+        child: Image.asset(
+          'images/dirt.png',
+          width: width - 2,
+          height: height - 2,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+          opacity: ghost ? const AlwaysStoppedAnimation(.5) : null,
+        ),
+      ),
+    );
   }
 }

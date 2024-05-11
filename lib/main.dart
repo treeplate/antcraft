@@ -27,69 +27,67 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-enum MenuState { p1, p2, ready }
+enum MenuState { startupSettings, ready }
 
 class _MyAppState extends State<MyApp> {
-  MenuState menuState = MenuState.p1;
+  MenuState menuState = MenuState.startupSettings;
 
-  late final bool cgisOn;
-  late final bool multiplayer;
+  bool cgisOn = false;
+  bool multiplayer = false;
+  bool easterMode = false;
 
   @override
   Widget build(BuildContext context) {
     switch (menuState) {
       case MenuState.ready:
         return MaterialApp(
-          home: MyHomePage(cgisOn: cgisOn, multiplayer: multiplayer),
+          theme: ThemeData.dark(useMaterial3: true),
+          home: MyHomePage(
+              cgisOn: cgisOn, multiplayer: multiplayer, easterMode: easterMode),
+          debugShowCheckedModeBanner: false,
         );
-      case MenuState.p1:
-        return MaterialApp(
-          home: Column(
-            children: [
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    menuState = MenuState.p2;
-                    cgisOn = false;
-                  });
-                },
-                child: const Text('CGIS Off'),
+      case MenuState.startupSettings:
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Theme(
+            data: ThemeData.dark(),
+            child: Material(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Game Settings',
+                    style: TextStyle(fontSize: 30),
+                  ),
+                  LabeledCheckbox(
+                    name: 'Easter Mode',
+                    onChanged: (checked) {
+                      easterMode = checked!;
+                    },
+                  ),
+                  LabeledCheckbox(
+                    name: 'Splitscreen Multiplayer',
+                    onChanged: (checked) {
+                      multiplayer = checked!;
+                    },
+                  ),
+                  LabeledCheckbox(
+                    name: 'Cross Game Inventory Swap (known broken)',
+                    onChanged: (checked) {
+                      cgisOn = checked!;
+                    },
+                  ),
+                  OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        menuState = MenuState.ready;
+                      });
+                    },
+                    child: const Text('Start game'),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    menuState = MenuState.p2;
-                    cgisOn = true;
-                  });
-                },
-                child: const Text('CGIS On'),
-              ),
-            ],
-          ),
-        );
-      case MenuState.p2:
-        return MaterialApp(
-          home: Column(
-            children: [
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    menuState = MenuState.ready;
-                    multiplayer = true;
-                  });
-                },
-                child: const Text('2 Player (local splitscreen)'),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    menuState = MenuState.ready;
-                    multiplayer = false;
-                  });
-                },
-                child: const Text('Singleplayer'),
-              ),
-            ],
+            ),
           ),
         );
     }
@@ -121,8 +119,13 @@ class Direction {
 class MyHomePage extends StatefulWidget {
   final bool cgisOn;
   final bool multiplayer;
+  final bool easterMode;
 
-  const MyHomePage({Key? key, required this.cgisOn, required this.multiplayer})
+  const MyHomePage(
+      {Key? key,
+      required this.cgisOn,
+      required this.multiplayer,
+      required this.easterMode})
       : super(key: key);
 
   @override
@@ -133,7 +136,7 @@ class _MyHomePageState extends State<MyHomePage> {
   TextEditingController cA = TextEditingController(text: 'main');
   TextEditingController cB = TextEditingController(text: 'partner');
 
-  late final World world = World(Random(), widget.cgisOn);
+  late final World world = World(Random(), widget.cgisOn, easterMode: widget.easterMode);
 
   Entity? yh; // yellow highlight
   Entity? gh; // green highlight
@@ -355,7 +358,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setPlayerPlant,
     ),
     Control(
-      'Mine ore / Chop tree',
+      'Mine {ore.stone} or {ore.iron} or {dirt} / Chop {entity.tree}',
       'mine',
       gpm,
       spm,
@@ -437,7 +440,12 @@ class _MyHomePageState extends State<MyHomePage> {
     if (placer != null) {
       for (EntityCell entityCell in toolbar) {
         if (event.logicalKey == entityCell.keybind && event is KeyDownEvent) {
-          if (world.place(placer!, entityCell.item)) {
+          if (world.place(
+              world.entities.values
+                      .expand((element) => element)
+                      .singleWhere((element) => element.code == placer!.code)
+                  as Player,
+              entityCell.item)) {
             pss[placer!.code]!.advancementsAcheived.add(placeAdv);
           }
         }
@@ -552,8 +560,26 @@ class _MyHomePageState extends State<MyHomePage> {
         pss[player.code]!.advancementsAcheived.add(collectStoredAdv);
       }
       if (pss[player.code]!.advancementsAcheived.length ==
-          advancements.length) {
+              advancements.length &&
+          !won) {
         won = true;
+        showDialog(
+          context: context,
+          builder: (context) {
+            return BoilerplateDialog(
+              title: 'You Won!',
+              children: [
+                const Text('You can continue playing, if you so desire.'),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('O.K.'),
+                )
+              ],
+            );
+          },
+        );
       }
     }
     if (!won) {
@@ -609,6 +635,7 @@ class _MyHomePageState extends State<MyHomePage> {
         case VerticalDirection.up:
           return 0;
         case VerticalDirection.down:
+          if (widget.easterMode) return world.screenHeight * 10 - 90;
           return (world.screenHeight * 10) - 150;
         case VerticalDirection.stay:
           return (world.screenHeight * 5) - 30;
@@ -631,7 +658,7 @@ class _MyHomePageState extends State<MyHomePage> {
         color: stoneColor,
         child: Stack(
           children: [
-            if (world.roomAt(player.room).baseOre == dirt)
+            if (world.roomAt(player.room)!.baseOre == dirt)
               flutter.Positioned.fill(
                 child: Image.asset(
                   'images/dirt.png',
@@ -641,48 +668,27 @@ class _MyHomePageState extends State<MyHomePage> {
                   filterQuality: FilterQuality.none,
                 ),
               ),
-            if (world.roomAt(player.room).ore != null && debugMode)
+            if (world.roomAt(player.room)!.ore != null && debugMode)
               flutter.Positioned(
-                left: world.roomAt(player.room).orePos.dx * 10,
-                top: world.roomAt(player.room).orePos.dy * 10,
+                left: world.roomAt(player.room)!.orePos.dx * 10,
+                top: world.roomAt(player.room)!.orePos.dy * 10,
                 child: Container(
                   width: 150,
                   height: 150,
                   color: Colors.green,
                 ),
               ),
-            if (world.roomAt(player.room).ore != null)
+            if (world.roomAt(player.room)!.ore != null)
               flutter.Positioned(
-                left: world.roomAt(player.room).orePos.dx * 10,
-                top: world.roomAt(player.room).orePos.dy * 10,
+                left: world.roomAt(player.room)!.orePos.dx * 10,
+                top: world.roomAt(player.room)!.orePos.dy * 10,
                 child: renderItem(
-                  world.roomAt(player.room).ore,
+                  world.roomAt(player.room)!.ore,
                   width: 150,
                   height: 150,
+                  easterMode: widget.easterMode,
                 ),
               ),
-            Center(
-              child: Text(
-                won
-                    ? 'You Won in $frames frames (or about ${() {
-                        int millis = frames * (1000 ~/ 60);
-                        int secs = millis ~/ 1000;
-                        int mins = secs ~/ 60;
-                        int nms = secs - mins * 60;
-                        int nsm = millis - secs * 1000;
-                        return '$mins:${nms.toString().padLeft(2, '0')}.${nsm.toString().padLeft(3, '0')}';
-                      }()})'
-                    : 'about ${() {
-                        int millis = frames * (1000 ~/ 60);
-                        int secs = millis ~/ 1000;
-                        int mins = secs ~/ 60;
-                        int nms = secs - mins * 60;
-                        int nsm = millis - secs * 1000;
-                        return '$mins:${nms.toString().padLeft(2, '0')}.${nsm.toString().padLeft(3, '0')}';
-                      }()}',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
             for (Entity entity in world
                     .entities[IntegerOffset(player.room.x, player.room.y)] ??
                 []) ...[
@@ -709,6 +715,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       : yh?.code == entity.code
                           ? Colors.lime
                           : Colors.transparent,
+                  easterMode: widget.easterMode,
                 ),
               ),
             ],
@@ -737,6 +744,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ? Colors.lime
                                 : Colors.transparent,
                         isMe: entity2.code == player.code,
+                        easterMode: widget.easterMode,
                       ),
                   ],
                 ),
@@ -753,6 +761,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       callback: (p0) {
                         world.store(player, p0);
                       },
+                      easterMode: widget.easterMode,
                     ),
                     const SizedBox(
                       width: 10,
@@ -762,6 +771,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       callback: (p0) {
                         world.take(player, p0);
                       },
+                      easterMode: widget.easterMode,
                     ),
                   ],
                 ),
@@ -785,6 +795,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 children: [
                                   parseInlinedIcons(
                                     '{$robot}id ${e.code} destination:',
+                                    easterMode: widget.easterMode,
                                   ),
                                   DropdownButton(
                                     value: e.target,
@@ -797,7 +808,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 ? e.target
                                                 : e2,
                                             child: parseInlinedIcons(
-                                                '{entity.${e2.type.name}}id ${e2.code}'),
+                                              '{entity.${e2.type.name}}id ${e2.code}',
+                                              easterMode: widget.easterMode,
+                                            ),
                                           ),
                                         )
                                         .toList(),
@@ -825,9 +838,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                     onPressed: () {
                                       world.toggleExploreForWood(player, e);
                                     },
-                                    child: parseInlinedIcons(e.exploreForWood
-                                        ? 'Don\'t exit room to find {$wood}'
-                                        : 'Exit room to find {$wood} if there isn\'t any in the current room'),
+                                    child: parseInlinedIcons(
+                                      e.exploreForWood
+                                          ? 'Don\'t exit room to find {$wood}'
+                                          : 'Exit room to find {$wood} if there isn\'t any in the current room',
+                                      easterMode: widget.easterMode,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -860,7 +876,12 @@ class _MyHomePageState extends State<MyHomePage> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  renderItem(item.key, width: 30, height: 30),
+                                  renderItem(
+                                    item.key,
+                                    width: 30,
+                                    height: 30,
+                                    easterMode: widget.easterMode,
+                                  ),
                                   Text(
                                     '${player.inv.where((element) => element.item == item.key).fold<int>(0, (p, n) => p + n.count)}/${item.value}',
                                     style: const TextStyle(
@@ -870,8 +891,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ],
                               ),
                             TextButton(
-                              child: renderItem(World.recipes[i].result,
-                                  width: 30, height: 30),
+                              child: renderItem(
+                                World.recipes[i].result,
+                                width: 30,
+                                height: 30,
+                                easterMode: widget.easterMode,
+                              ),
                               onPressed: () {
                                 world.craft(player, World.recipes[i]);
                                 pss[player.code]!
@@ -893,6 +918,7 @@ class _MyHomePageState extends State<MyHomePage> {
               Center(
                 child: InventoryWidget(
                   inventory: player.inv,
+                  easterMode: widget.easterMode,
                 ),
               ),
             if (pss[player.code]!.controlsDialogActive)
@@ -908,7 +934,12 @@ class _MyHomePageState extends State<MyHomePage> {
                         children: controls
                             .map((e) => Padding(
                                   padding: const EdgeInsets.all(8.0),
-                                  child: ControlSetting(player, e, s: this),
+                                  child: ControlSetting(
+                                    player,
+                                    e,
+                                    s: this,
+                                    easterMode: widget.easterMode,
+                                  ),
                                 ))
                             .toList(),
                       ),
@@ -930,10 +961,12 @@ class _MyHomePageState extends State<MyHomePage> {
                             .map((e) => Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: AdvancementDisplay(
-                                      pss[player.code]!
-                                          .advancementsAcheived
-                                          .contains(e),
-                                      e),
+                                    pss[player.code]!
+                                        .advancementsAcheived
+                                        .contains(e),
+                                    e,
+                                    easterMode: widget.easterMode,
+                                  ),
                                 ))
                             .toList(),
                       ),
@@ -951,13 +984,14 @@ class _MyHomePageState extends State<MyHomePage> {
                     style: TextStyle(color: Colors.yellow),
                   ),
                 ),
-                TextButton(
-                  onPressed: () => advancementsDialogToggle(player),
-                  child: const Text(
-                    'Show advancements',
-                    style: TextStyle(color: Colors.yellow),
+                if (!widget.easterMode)
+                  TextButton(
+                    onPressed: () => advancementsDialogToggle(player),
+                    child: const Text(
+                      'Show advancements',
+                      style: TextStyle(color: Colors.yellow),
+                    ),
                   ),
-                ),
               ],
             ),
           ],
@@ -975,18 +1009,47 @@ class _MyHomePageState extends State<MyHomePage> {
         onKeyEvent: _handleKeyPress,
         autofocus: true,
         child: Scaffold(
-          appBar: AppBar(
-            title: Center(
-              child: parseInlinedIcons(
-                group(
-                        world.entities.values.expand((element) => element).toList(),
-                        (Entity entity) => entity.type)
-                    .entries
-                    .map((e) => '${e.value.length}x{entity.${e.key.name}}')
-                    .join(' '),
-              ),
-            ),
-          ),
+          appBar: widget.easterMode
+              ? AppBar(
+                  title: Center(
+                    child: parseInlinedIcons(
+                      '{$robot}${world.bun?.inv ?? 0} | {entity.${EntityType.player.name}}${players.first.inv.where((stack) => stack.item == wood).fold(0, (a, b) => a + b.count)}',
+                      easterMode: widget.easterMode,
+                    ),
+                  ),
+                )
+              : AppBar(
+                  title: Center(
+                    child: parseInlinedIcons(
+                      group(
+                              world.entities.values
+                                  .expand((element) => element)
+                                  .toList(),
+                              (Entity entity) => entity.type)
+                          .entries
+                          .map(
+                              (e) => '${e.value.length}x{entity.${e.key.name}}')
+                          .join(' '),
+                      easterMode: widget.easterMode,
+                    ),
+                  ),
+                  actions: [
+                    Text(
+                      () {
+                        int millis = frames * (1000 ~/ 60);
+                        int secs = millis ~/ 1000;
+                        int mins = secs ~/ 60;
+                        int nms = secs - mins * 60;
+                        int nsm = millis - secs * 1000;
+                        return '$mins:${nms.toString().padLeft(2, '0')}.${nsm.toString().padLeft(3, '0')}';
+                      }(),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'monospace',
+                          fontSize: 28),
+                    )
+                  ],
+                ),
           // */
           body: ScreenFiller(
             child: Row(children: [
@@ -1000,30 +1063,37 @@ class _MyHomePageState extends State<MyHomePage> {
             ]),
           ),
           bottomNavigationBar: Container(
-            color: Colors.black,
+            color: Colors.black.withAlpha(128),
             child: Row(
               children: [
-                for (EntityCell cell in toolbar)
-                  TextButton(
-                    child: Column(
-                      children: [
-                        Center(
-                          child: renderItem(cell.item, width: 30, height: 30),
-                        ),
-                        parseInlinedIcons(
-                          '${placer?.inv.where((element) => element.item == cell.item).fold<int>(0, (p, n) => p + n.count) ?? 'N/A'}',
-                        ),
-                      ],
-                      mainAxisSize: MainAxisSize.min,
-                    ),
-                    onPressed: !(placer?.hasItem(cell.item, 1) ?? false)
-                        ? null
-                        : () {
-                            if (placer != null) {
-                              world.place(placer!, cell.item);
-                            }
-                          },
-                  )
+                if (!widget.easterMode)
+                  for (EntityCell cell in toolbar)
+                    TextButton(
+                      child: Column(
+                        children: [
+                          Center(
+                            child: renderItem(
+                              cell.item,
+                              width: 30,
+                              height: 30,
+                              easterMode: widget.easterMode,
+                            ),
+                          ),
+                          parseInlinedIcons(
+                            '${placer?.inv.where((element) => element.item == cell.item).fold<int>(0, (p, n) => p + n.count) ?? 'N/A'}',
+                            easterMode: widget.easterMode,
+                          ),
+                        ],
+                        mainAxisSize: MainAxisSize.min,
+                      ),
+                      onPressed: !(placer?.hasItem(cell.item, 1) ?? false)
+                          ? null
+                          : () {
+                              if (placer != null) {
+                                world.place(placer!, cell.item);
+                              }
+                            },
+                    )
               ],
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             ),
@@ -1056,16 +1126,23 @@ class AdvancementDisplay extends StatelessWidget {
   final Advancement advancement;
 
   final bool acheived;
+  final bool easterMode;
 
-  const AdvancementDisplay(this.acheived, this.advancement, {Key? key})
+  const AdvancementDisplay(this.acheived, this.advancement,
+      {Key? key, required this.easterMode})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
+    return Container(
       color: acheived ? Colors.green : Colors.grey,
-      child: Row(children: [
-        parseInlinedIcons(advancement.name, 20),
+      height: 30,
+      child: ListView(scrollDirection: Axis.horizontal, children: [
+        parseInlinedIcons(
+          advancement.name,
+          size: 20,
+          easterMode: easterMode,
+        ),
         const SizedBox(
           width: 5,
           height: 20,
@@ -1079,7 +1156,11 @@ class AdvancementDisplay extends StatelessWidget {
           width: 5,
           height: 20,
         ),
-        parseInlinedIcons(advancement.description, 20),
+        parseInlinedIcons(
+          advancement.description,
+          size: 20,
+          easterMode: easterMode,
+        ),
       ]),
     );
   }
@@ -1093,25 +1174,33 @@ class Advancement {
 }
 
 class ControlSetting extends StatelessWidget {
-  const ControlSetting(this.p, this.c, {Key? key, required this.s})
+  const ControlSetting(this.p, this.c,
+      {Key? key, required this.s, required this.easterMode})
       : super(key: key);
   final Control c;
   final Player p;
   final _MyHomePageState s;
+  final bool easterMode;
 
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      parseInlinedIcons(c.readableName),
+      parseInlinedIcons(
+        c.readableName,
+        easterMode: easterMode,
+      ),
+      const Padding(padding: EdgeInsets.all(3)),
       Text(
         c.internalName,
         style: const TextStyle(fontSize: 10, color: Colors.grey),
       ),
       TextButton(
         child: parseInlinedIcons(
-            s.changingControl != c || s.controlChanger?.code != p.code
-                ? c.getValue(p).keyLabel
-                : 'Press any key to change'),
+          s.changingControl != c || s.controlChanger?.code != p.code
+              ? c.getValue(p).keyLabel
+              : 'Press any key to change',
+          easterMode: easterMode,
+        ),
         onPressed: () {
           s.changingControl = c;
           s.controlChanger = p;
@@ -1172,4 +1261,61 @@ class DirectionalIntent extends Intent {
   const DirectionalIntent(this.x, this.y);
   final int x;
   final int y;
+}
+
+class BoilerplateDialog extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const BoilerplateDialog(
+      {super.key, required this.title, required this.children});
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(title, style: const TextStyle(fontSize: 28)),
+            const SizedBox(height: 15),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class LabeledCheckbox extends StatefulWidget {
+  final String name;
+  final void Function(bool?) onChanged;
+  const LabeledCheckbox(
+      {super.key, required this.name, required this.onChanged});
+
+  @override
+  State<LabeledCheckbox> createState() => _LabeledCheckboxState();
+}
+
+class _LabeledCheckboxState extends State<LabeledCheckbox> {
+  bool checked = false;
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(widget.name),
+        Checkbox(
+          value: checked,
+          onChanged: (checked2) {
+            widget.onChanged(checked2);
+            setState(() {
+              checked = checked2!;
+            });
+          },
+        ),
+      ],
+    );
+  }
 }
