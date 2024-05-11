@@ -36,4 +36,4 @@ At first my game was basically a snake game with no apples.
 When I pointed it out to someone they said it was not a snake game but an ***ant*** game.
 I may change the name.
 ## PRs
-I am open to PRs, however, I am not especially likely to accept them.
+I am open to PRs
