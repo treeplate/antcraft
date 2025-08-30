@@ -21,7 +21,7 @@ void main() {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -122,11 +122,10 @@ class MyHomePage extends StatefulWidget {
   final bool easterMode;
 
   const MyHomePage(
-      {Key? key,
+      {super.key,
       required this.cgisOn,
       required this.multiplayer,
-      required this.easterMode})
-      : super(key: key);
+      required this.easterMode});
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -1065,11 +1064,20 @@ class _MyHomePageState extends State<MyHomePage> {
           bottomNavigationBar: Container(
             color: Colors.black.withAlpha(128),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 if (!widget.easterMode)
                   for (EntityCell cell in toolbar)
                     TextButton(
+                      onPressed: !(placer?.hasItem(cell.item, 1) ?? false)
+                          ? null
+                          : () {
+                              if (placer != null) {
+                                world.place(placer!, cell.item);
+                              }
+                            },
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Center(
                             child: renderItem(
@@ -1084,18 +1092,9 @@ class _MyHomePageState extends State<MyHomePage> {
                             easterMode: widget.easterMode,
                           ),
                         ],
-                        mainAxisSize: MainAxisSize.min,
                       ),
-                      onPressed: !(placer?.hasItem(cell.item, 1) ?? false)
-                          ? null
-                          : () {
-                              if (placer != null) {
-                                world.place(placer!, cell.item);
-                              }
-                            },
                     )
               ],
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             ),
           ),
           // */
@@ -1129,8 +1128,7 @@ class AdvancementDisplay extends StatelessWidget {
   final bool easterMode;
 
   const AdvancementDisplay(this.acheived, this.advancement,
-      {Key? key, required this.easterMode})
-      : super(key: key);
+      {super.key, required this.easterMode});
 
   @override
   Widget build(BuildContext context) {
@@ -1175,8 +1173,7 @@ class Advancement {
 
 class ControlSetting extends StatelessWidget {
   const ControlSetting(this.p, this.c,
-      {Key? key, required this.s, required this.easterMode})
-      : super(key: key);
+      {super.key, required this.s, required this.easterMode});
   final Control c;
   final Player p;
   final _MyHomePageState s;
@@ -1243,8 +1240,7 @@ class EntityCell {
 }
 
 class ScreenFiller extends SingleChildRenderObjectWidget {
-  const ScreenFiller({Key? key, required Widget child})
-      : super(key: key, child: child);
+  const ScreenFiller({super.key, required Widget super.child});
   @override
   @override
   RenderObject createRenderObject(BuildContext context) {

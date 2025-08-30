@@ -9,11 +9,11 @@ const Color stoneColor = Color.fromARGB(179, 60, 59, 59);
 
 class OreRenderer extends StatelessWidget {
   const OreRenderer({
-    Key? key,
+    super.key,
     required this.color,
     required this.width,
     required this.height,
-  }) : super(key: key);
+  });
   final MaterialColor color;
   final double width;
   final double height;
@@ -32,10 +32,10 @@ class OreRenderer extends StatelessWidget {
 
 class StoneRenderer extends StatelessWidget {
   const StoneRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   @override
@@ -52,13 +52,13 @@ class StoneRenderer extends StatelessWidget {
 
 class WoodRenderer extends StatelessWidget {
   const WoodRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
     required this.easterMode,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -85,12 +85,12 @@ class WoodRenderer extends StatelessWidget {
 
 class TableRenderer extends StatelessWidget {
   const TableRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -160,8 +160,8 @@ Row parseInlinedIcons(String text,
     ));
   }
   return Row(
-    children: result,
     mainAxisSize: MainAxisSize.min,
+    children: result,
   );
 }
 
@@ -170,11 +170,11 @@ class InventoryWidget extends StatelessWidget {
   final void Function(ItemStack)? callback;
   final bool easterMode;
   const InventoryWidget({
-    Key? key,
+    super.key,
     required this.inventory,
     this.callback,
     required this.easterMode,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -204,6 +204,11 @@ class InventoryWidget extends StatelessWidget {
                         child: Padding(
                           padding: EdgeInsets.all(borderSize / 1),
                           child: GestureDetector(
+                            onTap: callback != null
+                                ? () {
+                                    callback!(e);
+                                  }
+                                : null,
                             child: ColoredBox(
                               color: Colors.black,
                               child: renderItem(
@@ -213,11 +218,6 @@ class InventoryWidget extends StatelessWidget {
                                 easterMode: easterMode,
                               ),
                             ),
-                            onTap: callback != null
-                                ? () {
-                                    callback!(e);
-                                  }
-                                : null,
                           ),
                         ),
                       ),
@@ -404,12 +404,12 @@ Widget renderEntity(EntityType entity,
 
 class BoxRenderer extends StatelessWidget {
   const BoxRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -435,12 +435,12 @@ class BoxRenderer extends StatelessWidget {
 
 class PlanterRenderer extends StatelessWidget {
   const PlanterRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -466,12 +466,12 @@ class PlanterRenderer extends StatelessWidget {
 
 class ChopperRenderer extends StatelessWidget {
   const ChopperRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -497,12 +497,12 @@ class ChopperRenderer extends StatelessWidget {
 
 class AntennaRenderer extends StatelessWidget {
   const AntennaRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -528,13 +528,13 @@ class AntennaRenderer extends StatelessWidget {
 
 class PlayerRenderer extends StatelessWidget {
   const PlayerRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
     required this.isMe,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -567,13 +567,13 @@ class PlayerRenderer extends StatelessWidget {
 
 class RobotRenderer extends StatelessWidget {
   const RobotRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
     required this.easterMode,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -600,12 +600,12 @@ class RobotRenderer extends StatelessWidget {
 
 class MinerRenderer extends StatelessWidget {
   const MinerRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -631,12 +631,12 @@ class MinerRenderer extends StatelessWidget {
 
 class SaplingRenderer extends StatelessWidget {
   const SaplingRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -662,12 +662,12 @@ class SaplingRenderer extends StatelessWidget {
 
 class TreeRenderer extends StatelessWidget {
   const TreeRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;
@@ -693,12 +693,12 @@ class TreeRenderer extends StatelessWidget {
 
 class DirtRenderer extends StatelessWidget {
   const DirtRenderer({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.ghost = false,
     this.borderColor = Colors.transparent,
-  }) : super(key: key);
+  });
   final double width;
   final double height;
   final bool ghost;

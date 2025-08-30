@@ -753,8 +753,7 @@ class Recipe {
 abstract class Entity extends Positioned {
   static int nextCode = 0;
 
-  Entity(double dx, double dy, IntegerOffset room, int? codeArg)
-      : super(dx, dy, room) {
+  Entity(super.dx, super.dy, super.room, int? codeArg) {
     code = codeArg ?? nextCode++;
     if (codeArg == null) {
       print('#$code: $this');
@@ -767,8 +766,7 @@ abstract class Entity extends Positioned {
 }
 
 class Table extends Interacter {
-  Table(double dx, double dy, IntegerOffset room, int? codeArg)
-      : super(dx, dy, room, codeArg);
+  Table(super.dx, super.dy, super.room, super.codeArg);
 
   @override
   Table copy() => Table(dx, dy, room, code);
@@ -778,8 +776,7 @@ class Table extends Interacter {
 }
 
 class CollectibleWood extends Entity {
-  CollectibleWood(double dx, double dy, IntegerOffset room, int? codeArg)
-      : super(dx, dy, room, codeArg);
+  CollectibleWood(super.dx, super.dy, super.room, super.codeArg);
 
   @override
   CollectibleWood copy() {
@@ -791,8 +788,7 @@ class CollectibleWood extends Entity {
 }
 
 class Dirt extends Entity {
-  Dirt(double dx, double dy, IntegerOffset room, int? codeArg)
-      : super(dx, dy, room, codeArg);
+  Dirt(super.dx, super.dy, super.room, super.codeArg);
 
   @override
   Dirt copy() {
@@ -804,8 +800,7 @@ class Dirt extends Entity {
 }
 
 abstract class Storer extends Entity {
-  Storer(double dx, double dy, IntegerOffset room, int? codeArg, [this.inv = 0])
-      : super(dx, dy, room, codeArg);
+  Storer(super.dx, super.dy, super.room, super.codeArg, [this.inv = 0]);
   int inv;
 
   String storedItem(Room room);
@@ -841,9 +836,8 @@ class Positioned {
 }
 
 class Miner extends Storer {
-  Miner(double dx, double dy, IntegerOffset room, int? codeArg,
-      [int inv = 0, this.cooldown = 1])
-      : super(dx, dy, room, codeArg, inv);
+  Miner(super.dx, super.dy, super.room, super.codeArg,
+      [super.inv, this.cooldown = 1]);
 
   int cooldown;
 
@@ -861,11 +855,11 @@ class Miner extends Storer {
 
 class Planter extends Entity {
   Planter(
-    double dx,
-    double dy,
-    IntegerOffset room,
-    int? codeArg,
-  ) : super(dx, dy, room, codeArg);
+    super.dx,
+    super.dy,
+    super.room,
+    super.codeArg,
+  );
 
   @override
   Planter copy() {
@@ -878,11 +872,11 @@ class Planter extends Entity {
 
 class Chopper extends Entity {
   Chopper(
-    double dx,
-    double dy,
-    IntegerOffset room,
-    int? codeArg,
-  ) : super(dx, dy, room, codeArg);
+    super.dx,
+    super.dy,
+    super.room,
+    super.codeArg,
+  );
 
   @override
   Chopper copy() {
@@ -895,11 +889,11 @@ class Chopper extends Entity {
 
 class Antenna extends Interacter {
   Antenna(
-    double dx,
-    double dy,
-    IntegerOffset room,
-    int? codeArg,
-  ) : super(dx, dy, room, codeArg);
+    super.dx,
+    super.dy,
+    super.room,
+    super.codeArg,
+  );
 
   @override
   Antenna copy() {
@@ -931,8 +925,7 @@ class Sapling extends Entity {
 class Tree extends Entity {
   final bool autoPlanted;
 
-  Tree(double dx, double dy, IntegerOffset room, int? codeArg, this.autoPlanted)
-      : super(dx, dy, room, codeArg);
+  Tree(super.dx, super.dy, super.room, super.codeArg, this.autoPlanted);
 
   @override
   Tree copy() {
@@ -1079,16 +1072,14 @@ class Player extends InventoryEntity {
 }
 
 abstract class Interacter extends Entity {
-  Interacter(double dx, double dy, IntegerOffset room, int? codeArg)
-      : super(dx, dy, room, codeArg);
+  Interacter(super.dx, super.dy, super.room, super.codeArg);
   @override
   Interacter copy();
 }
 
 class Box extends InventoryEntity implements Interacter {
-  Box(double dx, double dy, IntegerOffset room, List<ItemStack> inv,
-      int? codeArg)
-      : super(dx, dy, room, inv, codeArg);
+  Box(super.dx, super.dy, super.room, super.inv,
+      super.codeArg);
 
   @override
   EntityType get type => EntityType.box;
